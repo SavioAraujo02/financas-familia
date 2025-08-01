@@ -1,0 +1,30 @@
+{
+    "css.validate": false,
+    "scss.validate": false,
+    "less.validate": false,
+    "tailwindCSS.includeLanguages": {
+      "html": "html",
+      "javascript": "javascript",
+      "typescript": "typescript",
+      "javascriptreact": "javascriptreact",
+      "typescriptreact": "typescriptreact"
+    },
+    "tailwindCSS.experimental.classRegex": [
+      ["cn\\(([^)]*)\\)", "'([^']*)'"],
+      ["clsx\\(([^)]*)\\)", "'([^']*)'"]
+    ],
+    "files.associations": {
+      "*.css": "tailwindcss"
+    },
+    "editor.quickSuggestions": {
+      "strings": true
+    },
+    "tailwindCSS.validate": true,
+    "tailwindCSS.lint.cssConflict": "warning",
+    "tailwindCSS.lint.invalidApply": "error",
+    "tailwindCSS.lint.invalidScreen": "error",
+    "tailwindCSS.lint.invalidVariant": "error",
+    "tailwindCSS.lint.invalidConfigPath": "error",
+    "tailwindCSS.lint.invalidTailwindDirective": "error",
+    "tailwindCSS.lint.recommendedVariantOrder": "warning"
+  }
