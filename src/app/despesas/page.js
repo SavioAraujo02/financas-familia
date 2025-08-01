@@ -68,7 +68,7 @@ export default function DespesasRevolucionaria() {
 
   const loadData = async () => {
     try {
-      const { auth, transactions, categories: categoriesAPI, cards } = await import('@/lib/supabase')
+      const { auth, transactions, categories: categoriesAPI, cards, profiles } = await import('@/lib/supabase')
       
       const { user: currentUser } = await auth.getUser()
       if (!currentUser) {
@@ -455,8 +455,21 @@ export default function DespesasRevolucionaria() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     
+    // POR esta validação mais completa:
     if (!formData.description || !formData.amount || !formData.category_id) {
       alert('Por favor, preencha todos os campos obrigatórios')
+      return
+    }
+
+    // Validação específica para parceladas
+    if (tipoFormulario === 'parcelada' && !formData.card_id) {
+      alert('Por favor, selecione um cartão para despesas parceladas')
+      return
+    }
+
+    // Validação específica para despesas fixas
+    if (tipoFormulario === 'fixa' && !formData.due_day) {
+      alert('Por favor, informe o dia de vencimento para despesas fixas')
       return
     }
   
@@ -1601,14 +1614,29 @@ export default function DespesasRevolucionaria() {
               ) : (
                 <div style={{ height: '400px' }}>
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={[
-                      { mes: 'Fev', valor: 7200 },
-                      { mes: 'Mar', valor: 8100 },
-                      { mes: 'Abr', valor: 7800 },
-                      { mes: 'Mai', valor: 8400 },
-                      { mes: 'Jun', valor: 8200 },
-                      { mes: 'Jul', valor: totalMes }
-                    ]}>
+                  <LineChart data={(() => {
+                    const hoje = new Date()
+                    const dadosGrafico = []
+                    
+                    for (let i = 5; i >= 0; i--) {
+                      const mesCalculo = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1)
+                      const inicioMes = new Date(mesCalculo.getFullYear(), mesCalculo.getMonth(), 1).toISOString().split('T')[0]
+                      const fimMes = new Date(mesCalculo.getFullYear(), mesCalculo.getMonth() + 1, 0).toISOString().split('T')[0]
+                      
+                      const despesasMes = despesas.filter(d => 
+                        d.date >= inicioMes && d.date <= fimMes && d.status === 'confirmado'
+                      )
+                      const totalMesCalc = despesasMes.reduce((sum, d) => sum + d.amount, 0)
+                      
+                      const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+                      dadosGrafico.push({
+                        mes: meses[mesCalculo.getMonth()],
+                        valor: totalMesCalc
+                      })
+                    }
+                    
+                    return dadosGrafico
+                  })()}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="mes" />
                       <YAxis />
@@ -1674,14 +1702,29 @@ export default function DespesasRevolucionaria() {
                 </h3>
                 <div style={{ height: '120px' }}>
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={[
-                      { mes: 'Fev', valor: 7200 },
-                      { mes: 'Mar', valor: 8100 },
-                      { mes: 'Abr', valor: 7800 },
-                      { mes: 'Mai', valor: 8400 },
-                      { mes: 'Jun', valor: 8200 },
-                      { mes: 'Jul', valor: totalMes }
-                    ]}>
+                    <LineChart data={(() => {
+                      const hoje = new Date()
+                      const dadosGrafico = []
+                      
+                      for (let i = 5; i >= 0; i--) {
+                        const mesCalculo = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1)
+                        const inicioMes = new Date(mesCalculo.getFullYear(), mesCalculo.getMonth(), 1).toISOString().split('T')[0]
+                        const fimMes = new Date(mesCalculo.getFullYear(), mesCalculo.getMonth() + 1, 0).toISOString().split('T')[0]
+                        
+                        const despesasMes = despesas.filter(d => 
+                          d.date >= inicioMes && d.date <= fimMes && d.status === 'confirmado'
+                        )
+                        const totalMesCalc = despesasMes.reduce((sum, d) => sum + d.amount, 0)
+                        
+                        const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+                        dadosGrafico.push({
+                          mes: meses[mesCalculo.getMonth()],
+                          valor: totalMesCalc
+                        })
+                      }
+                      
+                      return dadosGrafico
+                    })()}>
                       <Line 
                         type="monotone" 
                         dataKey="valor" 
