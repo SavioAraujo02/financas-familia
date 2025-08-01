@@ -2068,4 +2068,2258 @@ export default function ConfiguracoesRevolucionarias() {
                       }}>
                         <input
                           type="checkbox"
-                          checked={seguranca
+                          checked={segurancaConfig.historicoAcessos}
+                          onChange={(e) => setSegurancaConfig(prev => ({
+                            ...prev,
+                            historicoAcessos: e.target.checked
+                          }))}
+                        />
+                        📋 Histórico de acessos
+                      </label>
+
+                      <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontSize: '14px',
+                        color: '#0c4a6e',
+                        cursor: 'pointer'
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={segurancaConfig.alertasLogin}
+                          onChange={(e) => setSegurancaConfig(prev => ({
+                            ...prev,
+                            alertasLogin: e.target.checked
+                          }))}
+                        />
+                        🚨 Alertas de login
+                      </label>
+                    </div>
+                    <div>
+                      <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontSize: '14px',
+                        color: '#0c4a6e',
+                        marginBottom: '8px',
+                        cursor: 'pointer'
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={segurancaConfig.senhaExpira}
+                          onChange={(e) => setSegurancaConfig(prev => ({
+                            ...prev,
+                            senhaExpira: e.target.checked
+                          }))}
+                        />
+                        🔄 Senha expira (90 dias)
+                      </label>
+
+                      <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontSize: '14px',
+                        color: '#0c4a6e',
+                        cursor: 'pointer'
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={segurancaConfig.backupCriptografado}
+                          onChange={(e) => setSegurancaConfig(prev => ({
+                            ...prev,
+                            backupCriptografado: e.target.checked
+                          }))}
+                        />
+                        🔒 Backup criptografado
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Histórico de Segurança */}
+                <div style={{
+                  backgroundColor: '#f0fdf4',
+                  border: '1px solid #bbf7d0',
+                  borderRadius: '12px',
+                  padding: '20px'
+                }}>
+                  <h3 style={{
+                    fontSize: '18px',
+                    fontWeight: 'bold',
+                    margin: '0 0 16px 0',
+                    color: '#166534'
+                  }}>
+                    📊 HISTÓRICO DE SEGURANÇA
+                  </h3>
+                  
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: '16px'
+                  }}>
+                    <div>
+                      <div style={{ fontSize: '14px', color: '#166534', marginBottom: '8px' }}>
+                        🕐 Último login: <strong>Hoje, 14:30</strong>
+                      </div>
+                      <div style={{ fontSize: '14px', color: '#166534', marginBottom: '8px' }}>
+                        📱 Dispositivo: <strong>Chrome - Windows</strong>
+                      </div>
+                      <div style={{ fontSize: '14px', color: '#166534' }}>
+                        🌍 Localização: <strong>São Paulo, SP</strong>
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '14px', color: '#166534', marginBottom: '8px' }}>
+                        🔐 Tentativas falhas: <strong>0 (últimos 30 dias)</strong>
+                      </div>
+                      <div style={{ fontSize: '14px', color: '#166534', marginBottom: '8px' }}>
+                        🔄 Última troca senha: <strong>15/Jan/2025</strong>
+                      </div>
+                      <div style={{ fontSize: '14px', color: '#166534' }}>
+                        ✅ Status: <strong>Conta Segura</strong>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ABA: BACKUP */}
+            {abaAtiva === 'backup' && (
+              <div>
+                <h2 style={{
+                  fontSize: '20px',
+                  fontWeight: 'bold',
+                  margin: '0 0 24px 0',
+                  color: '#1a202c',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px'
+                }}>
+                  ☁️ CONFIGURAÇÕES DE BACKUP
+                </h2>
+
+                {/* Status do Backup */}
+                <div style={{
+                  backgroundColor: '#f0fdf4',
+                  border: '1px solid #bbf7d0',
+                  borderRadius: '12px',
+                  padding: '20px',
+                  marginBottom: '24px'
+                }}>
+                  <h3 style={{
+                    fontSize: '18px',
+                    fontWeight: 'bold',
+                    margin: '0 0 16px 0',
+                    color: '#166534'
+                  }}>
+                    📊 STATUS DO BACKUP
+                  </h3>
+                  
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr 1fr',
+                    gap: '16px',
+                    marginBottom: '16px'
+                  }}>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#166534' }}>
+                        ✅ ATIVO
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#166534' }}>
+                        Backup Automático
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#166534' }}>
+                        {backupConfig.tamanhoBackup}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#166534' }}>
+                        Tamanho Total
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#166534' }}>
+                        {backupConfig.manterBackups}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#166534' }}>
+                        Dias Mantidos
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: '16px'
+                  }}>
+                    <div>
+                      <div style={{ fontSize: '14px', color: '#166534', marginBottom: '4px' }}>
+                        🕐 Último backup: <strong>{backupConfig.ultimoBackup}</strong>
+                      </div>
+                      <div style={{ fontSize: '14px', color: '#166534' }}>
+                        ⏰ Próximo backup: <strong>{backupConfig.proximoBackup}</strong>
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <button
+                        onClick={() => setShowBackupModal(true)}
+                        style={{
+                          backgroundColor: '#166534',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '8px',
+                          padding: '10px 20px',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        🔄 Fazer Backup Agora
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Configurações de Backup */}
+                <div style={{
+                  backgroundColor: '#f0f9ff',
+                  border: '1px solid #7dd3fc',
+                  borderRadius: '12px',
+                  padding: '20px',
+                  marginBottom: '24px'
+                }}>
+                  <h3 style={{
+                    fontSize: '18px',
+                    fontWeight: 'bold',
+                    margin: '0 0 16px 0',
+                    color: '#0c4a6e'
+                  }}>
+                    ⚙️ CONFIGURAÇÕES DE BACKUP
+                  </h3>
+                  
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: '16px'
+                  }}>
+                    <div>
+                      <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontSize: '14px',
+                        color: '#0c4a6e',
+                        marginBottom: '12px',
+                        cursor: 'pointer'
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={backupConfig.backupAutomatico}
+                          onChange={(e) => setBackupConfig(prev => ({
+                            ...prev,
+                            backupAutomatico: e.target.checked
+                          }))}
+                        />
+                        🔄 Backup automático
+                      </label>
+
+                      <div style={{ marginBottom: '12px' }}>
+                        <label style={{
+                          display: 'block',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          color: '#0c4a6e',
+                          marginBottom: '4px'
+                        }}>
+                          📅 Frequência:
+                        </label>
+                        <select
+                          value={backupConfig.frequenciaBackup}
+                          onChange={(e) => setBackupConfig(prev => ({
+                            ...prev,
+                            frequenciaBackup: e.target.value
+                          }))}
+                          style={{
+                            width: '100%',
+                            padding: '8px 12px',
+                            border: '2px solid #7dd3fc',
+                            borderRadius: '6px',
+                            fontSize: '14px',
+                            backgroundColor: 'white'
+                          }}
+                        >
+                          <option value="diario">Diário</option>
+                          <option value="semanal">Semanal</option>
+                          <option value="mensal">Mensal</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div style={{ marginBottom: '12px' }}>
+                        <label style={{
+                          display: 'block',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          color: '#0c4a6e',
+                          marginBottom: '4px'
+                        }}>
+                          🗂️ Manter backups por:
+                        </label>
+                        <select
+                          value={backupConfig.manterBackups}
+                          onChange={(e) => setBackupConfig(prev => ({
+                            ...prev,
+                            manterBackups: parseInt(e.target.value)
+                          }))}
+                          style={{
+                            width: '100%',
+                            padding: '8px 12px',
+                            border: '2px solid #7dd3fc',
+                            borderRadius: '6px',
+                            fontSize: '14px',
+                            backgroundColor: 'white'
+                          }}
+                        >
+                          <option value={7}>7 dias</option>
+                          <option value={15}>15 dias</option>
+                          <option value={30}>30 dias</option>
+                          <option value={90}>90 dias</option>
+                        </select>
+                      </div>
+
+                      <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontSize: '14px',
+                        color: '#0c4a6e',
+                        cursor: 'pointer'
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={backupConfig.incluirAnexos}
+                          onChange={(e) => setBackupConfig(prev => ({
+                            ...prev,
+                            incluirAnexos: e.target.checked
+                          }))}
+                        />
+                        📎 Incluir anexos
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Restauração */}
+                <div style={{
+                  backgroundColor: '#fef3c7',
+                  border: '1px solid #fcd34d',
+                  borderRadius: '12px',
+                  padding: '20px'
+                }}>
+                  <h3 style={{
+                    fontSize: '18px',
+                    fontWeight: 'bold',
+                    margin: '0 0 16px 0',
+                    color: '#92400e'
+                  }}>
+                    🔄 RESTAURAÇÃO
+                  </h3>
+                  
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr auto',
+                    gap: '16px',
+                    alignItems: 'center'
+                  }}>
+                    <div>
+                      <div style={{ fontSize: '14px', color: '#92400e', marginBottom: '8px' }}>
+                        📋 Backups disponíveis para restauração:
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#92400e' }}>
+                        • Backup de hoje (14:30) - 2.3 MB<br/>
+                        • Backup de ontem (14:30) - 2.2 MB<br/>
+                        • Backup de 28/Jul (14:30) - 2.1 MB
+                      </div>
+                    </div>
+                    <div>
+                      <button
+                        style={{
+                          backgroundColor: '#92400e',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '8px',
+                          padding: '10px 20px',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        📥 Restaurar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ABA: DADOS */}
+            {abaAtiva === 'dados' && (
+              <div>
+                <h2 style={{
+                  fontSize: '20px',
+                  fontWeight: 'bold',
+                  margin: '0 0 24px 0',
+                  color: '#1a202c',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px'
+                }}>
+                  🌐 GESTÃO DE DADOS
+                </h2>
+
+                {/* Estatísticas de Uso */}
+                <div style={{
+                  backgroundColor: '#f0f9ff',
+                  border: '1px solid #7dd3fc',
+                  borderRadius: '12px',
+                  padding: '20px',
+                  marginBottom: '24px'
+                }}>
+                  <h3 style={{
+                    fontSize: '18px',
+                    fontWeight: 'bold',
+                    margin: '0 0 16px 0',
+                    color: '#0c4a6e'
+                  }}>
+                    📊 ESTATÍSTICAS DE USO
+                  </h3>
+                  
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                    gap: '16px'
+                  }}>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#0c4a6e' }}>
+                        {estatisticasUso.diasUso}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#0c4a6e' }}>
+                        Dias de Uso
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#0c4a6e' }}>
+                        {estatisticasUso.transacoes}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#0c4a6e' }}>
+                        Transações
+                      </div>
+                    </div>
+                    
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#0c4a6e' }}>
+                        {estatisticasUso.categorias}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#0c4a6e' }}>
+                        Categorias
+                      </div>
+                    </div>
+                    
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#0c4a6e' }}>
+                        {estatisticasUso.metas}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#0c4a6e' }}>
+                        Metas
+                      </div>
+                    </div>
+                    
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#0c4a6e' }}>
+                        {estatisticasUso.backups}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#0c4a6e' }}>
+                        Backups
+                      </div>
+                    </div>
+                    
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#0c4a6e' }}>
+                        {estatisticasUso.espacoUsado}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#0c4a6e' }}>
+                        Espaço Usado
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Exportar/Importar */}
+                <div style={{
+                  backgroundColor: '#fef3c7',
+                  border: '1px solid #fcd34d',
+                  borderRadius: '12px',
+                  padding: '20px',
+                  marginBottom: '24px'
+                }}>
+                  <h3 style={{
+                    fontSize: '18px',
+                    fontWeight: 'bold',
+                    margin: '0 0 16px 0',
+                    color: '#92400e'
+                  }}>
+                    📤 EXPORTAR / IMPORTAR DADOS
+                  </h3>
+                  
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: '16px'
+                  }}>
+                    <div>
+                      <h4 style={{
+                        fontSize: '16px',
+                        fontWeight: '600',
+                        color: '#92400e',
+                        marginBottom: '12px'
+                      }}>
+                        📤 EXPORTAR
+                      </h4>
+                      <div style={{ marginBottom: '12px' }}>
+                        <button
+                          onClick={() => setShowExportarModal(true)}
+                          style={{
+                            width: '100%',
+                            backgroundColor: '#92400e',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '8px',
+                            padding: '12px',
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            marginBottom: '8px'
+                          }}
+                        >
+                          📊 Exportar Configurações
+                        </button>
+                        <button
+                          style={{
+                            width: '100%',
+                            backgroundColor: '#92400e',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '8px',
+                            padding: '12px',
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            marginBottom: '8px'
+                          }}
+                        >
+                          💾 Exportar Todos os Dados
+                        </button>
+                        <button
+                          style={{
+                            width: '100%',
+                            backgroundColor: '#92400e',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '8px',
+                            padding: '12px',
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          📋 Exportar Relatório
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h4 style={{
+                        fontSize: '16px',
+                        fontWeight: '600',
+                        color: '#92400e',
+                        marginBottom: '12px'
+                      }}>
+                        📥 IMPORTAR
+                      </h4>
+                      <div style={{ marginBottom: '12px' }}>
+                        <input
+                          type="file"
+                          accept=".json,.csv,.xlsx"
+                          style={{
+                            width: '100%',
+                            padding: '8px',
+                            border: '2px solid #fcd34d',
+                            borderRadius: '6px',
+                            fontSize: '14px',
+                            marginBottom: '8px'
+                          }}
+                        />
+                        <button
+                          style={{
+                            width: '100%',
+                            backgroundColor: '#92400e',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '8px',
+                            padding: '12px',
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          📥 Importar Dados
+                        </button>
+                      </div>
+                      <div style={{
+                        fontSize: '12px',
+                        color: '#92400e',
+                        backgroundColor: 'rgba(146, 64, 14, 0.1)',
+                        padding: '8px',
+                        borderRadius: '4px'
+                      }}>
+                        ⚠️ Formatos aceitos: JSON, CSV, XLSX
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Limpeza de Dados */}
+                <div style={{
+                  backgroundColor: '#fef2f2',
+                  border: '1px solid #fecaca',
+                  borderRadius: '12px',
+                  padding: '20px'
+                }}>
+                  <h3 style={{
+                    fontSize: '18px',
+                    fontWeight: 'bold',
+                    margin: '0 0 16px 0',
+                    color: '#dc2626'
+                  }}>
+                    🗑️ LIMPEZA DE DADOS
+                  </h3>
+                  
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr auto',
+                    gap: '16px',
+                    alignItems: 'center'
+                  }}>
+                    <div>
+                      <div style={{ fontSize: '14px', color: '#dc2626', marginBottom: '8px' }}>
+                        ⚠️ <strong>ATENÇÃO:</strong> Estas ações são irreversíveis!
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#dc2626' }}>
+                        • Limpar dados antigos (mais de 2 anos)<br/>
+                        • Remover transações duplicadas<br/>
+                        • Reset completo das configurações
+                      </div>
+                    </div>
+                    <div>
+                      <button
+                        onClick={() => setShowResetModal(true)}
+                        style={{
+                          backgroundColor: '#dc2626',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '8px',
+                          padding: '10px 20px',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        🗑️ Limpar Dados
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ABA: AVANÇADO */}
+            {abaAtiva === 'avancado' && (
+              <div>
+                <h2 style={{
+                  fontSize: '20px',
+                  fontWeight: 'bold',
+                  margin: '0 0 24px 0',
+                  color: '#1a202c',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px'
+                }}>
+                  ⚡ CONFIGURAÇÕES AVANÇADAS
+                </h2>
+
+                {/* Configurações de Performance */}
+                <div style={{
+                  backgroundColor: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '12px',
+                  padding: '20px',
+                  marginBottom: '24px'
+                }}>
+                  <h3 style={{
+                    fontSize: '18px',
+                    fontWeight: 'bold',
+                    margin: '0 0 16px 0',
+                    color: '#374151'
+                  }}>
+                    🚀 PERFORMANCE
+                  </h3>
+                  
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: '16px'
+                  }}>
+                    <div>
+                      <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontSize: '14px',
+                        color: '#374151',
+                        marginBottom: '8px',
+                        cursor: 'pointer'
+                      }}>
+                        <input type="checkbox" defaultChecked />
+                        🔄 Cache inteligente
+                      </label>
+                      
+                      <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontSize: '14px',
+                        color: '#374151',
+                        marginBottom: '8px',
+                        cursor: 'pointer'
+                      }}>
+                        <input type="checkbox" defaultChecked />
+                        ⚡ Carregamento otimizado
+                      </label>
+                      
+                      <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontSize: '14px',
+                        color: '#374151',
+                        cursor: 'pointer'
+                      }}>
+                        <input type="checkbox" defaultChecked />
+                        📱 Modo offline
+                      </label>
+                    </div>
+
+                    <div>
+                      <div style={{ marginBottom: '12px' }}>
+                        <label style={{
+                          display: 'block',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          color: '#374151',
+                          marginBottom: '4px'
+                        }}>
+                          🔄 Sincronização:
+                        </label>
+                        <select
+                          style={{
+                            width: '100%',
+                            padding: '8px 12px',
+                            border: '2px solid #e2e8f0',
+                            borderRadius: '6px',
+                            fontSize: '14px',
+                            backgroundColor: 'white'
+                          }}
+                        >
+                          <option value="tempo-real">Tempo real</option>
+                          <option value="5min">A cada 5 minutos</option>
+                          <option value="15min">A cada 15 minutos</option>
+                          <option value="manual">Manual</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label style={{
+                          display: 'block',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          color: '#374151',
+                          marginBottom: '4px'
+                        }}>
+                          💾 Cache local:
+                        </label>
+                        <select
+                          style={{
+                            width: '100%',
+                            padding: '8px 12px',
+                            border: '2px solid #e2e8f0',
+                            borderRadius: '6px',
+                            fontSize: '14px',
+                            backgroundColor: 'white'
+                          }}
+                        >
+                          <option value="50mb">50 MB</option>
+                          <option value="100mb">100 MB</option>
+                          <option value="200mb">200 MB</option>
+                          <option value="ilimitado">Ilimitado</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Configurações de Desenvolvedor */}
+                <div style={{
+                  backgroundColor: '#f0f9ff',
+                  border: '1px solid #7dd3fc',
+                  borderRadius: '12px',
+                  padding: '20px',
+                  marginBottom: '24px'
+                }}>
+                  <h3 style={{
+                    fontSize: '18px',
+                    fontWeight: 'bold',
+                    margin: '0 0 16px 0',
+                    color: '#0c4a6e'
+                  }}>
+                    👨‍💻 MODO DESENVOLVEDOR
+                  </h3>
+                  
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: '16px'
+                  }}>
+                    <div>
+                      <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontSize: '14px',
+                        color: '#0c4a6e',
+                        marginBottom: '8px',
+                        cursor: 'pointer'
+                      }}>
+                        <input type="checkbox" />
+                        🐛 Modo debug
+                      </label>
+                      
+                      <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontSize: '14px',
+                        color: '#0c4a6e',
+                        marginBottom: '8px',
+                        cursor: 'pointer'
+                      }}>
+                        <input type="checkbox" />
+                        📊 Logs detalhados
+                      </label>
+                      
+                      <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontSize: '14px',
+                        color: '#0c4a6e',
+                        cursor: 'pointer'
+                      }}>
+                        <input type="checkbox" />
+                        🔍 Console de API
+                      </label>
+                    </div>
+
+                    <div>
+                      <button
+                        style={{
+                          width: '100%',
+                          backgroundColor: '#0c4a6e',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '8px',
+                          padding: '10px',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          marginBottom: '8px'
+                        }}
+                      >
+                        📋 Ver Logs do Sistema
+                        </button>
+                      
+                      <button
+                        style={{
+                          width: '100%',
+                          backgroundColor: '#0c4a6e',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '8px',
+                          padding: '10px',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          marginBottom: '8px'
+                        }}
+                      >
+                        🔧 Ferramentas de Debug
+                      </button>
+                      
+                      <button
+                        style={{
+                          width: '100%',
+                          backgroundColor: '#0c4a6e',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '8px',
+                          padding: '10px',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        📊 Métricas de Performance
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Configurações Experimentais */}
+                <div style={{
+                  backgroundColor: '#fef3c7',
+                  border: '1px solid #fcd34d',
+                  borderRadius: '12px',
+                  padding: '20px',
+                  marginBottom: '24px'
+                }}>
+                  <h3 style={{
+                    fontSize: '18px',
+                    fontWeight: 'bold',
+                    margin: '0 0 16px 0',
+                    color: '#92400e'
+                  }}>
+                    🧪 RECURSOS EXPERIMENTAIS
+                  </h3>
+                  
+                  <div style={{
+                    backgroundColor: 'rgba(146, 64, 14, 0.1)',
+                    borderRadius: '8px',
+                    padding: '12px',
+                    marginBottom: '16px'
+                  }}>
+                    <div style={{ fontSize: '12px', color: '#92400e' }}>
+                      ⚠️ <strong>ATENÇÃO:</strong> Recursos experimentais podem ser instáveis
+                    </div>
+                  </div>
+                  
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: '16px'
+                  }}>
+                    <div>
+                      <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontSize: '14px',
+                        color: '#92400e',
+                        marginBottom: '8px',
+                        cursor: 'pointer'
+                      }}>
+                        <input type="checkbox" />
+                        🤖 IA Avançada (Beta)
+                      </label>
+                      
+                      <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontSize: '14px',
+                        color: '#92400e',
+                        marginBottom: '8px',
+                        cursor: 'pointer'
+                      }}>
+                        <input type="checkbox" />
+                        📊 Gráficos 3D (Alpha)
+                      </label>
+                      
+                      <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontSize: '14px',
+                        color: '#92400e',
+                        cursor: 'pointer'
+                      }}>
+                        <input type="checkbox" />
+                        🎙️ Comandos de Voz (Beta)
+                      </label>
+                    </div>
+
+                    <div>
+                      <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontSize: '14px',
+                        color: '#92400e',
+                        marginBottom: '8px',
+                        cursor: 'pointer'
+                      }}>
+                        <input type="checkbox" />
+                        🔮 Previsão IA 24 meses
+                      </label>
+                      
+                      <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontSize: '14px',
+                        color: '#92400e',
+                        marginBottom: '8px',
+                        cursor: 'pointer'
+                      }}>
+                        <input type="checkbox" />
+                        📱 Widget Avançado
+                      </label>
+                      
+                      <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontSize: '14px',
+                        color: '#92400e',
+                        cursor: 'pointer'
+                      }}>
+                        <input type="checkbox" />
+                        🌐 Modo Colaborativo
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Informações do Sistema */}
+                <div style={{
+                  backgroundColor: '#f0fdf4',
+                  border: '1px solid #bbf7d0',
+                  borderRadius: '12px',
+                  padding: '20px'
+                }}>
+                  <h3 style={{
+                    fontSize: '18px',
+                    fontWeight: 'bold',
+                    margin: '0 0 16px 0',
+                    color: '#166534'
+                  }}>
+                    ℹ️ INFORMAÇÕES DO SISTEMA
+                  </h3>
+                  
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: '16px'
+                  }}>
+                    <div>
+                      <div style={{ fontSize: '14px', color: '#166534', marginBottom: '8px' }}>
+                        📱 Versão do App: <strong>v2.1.0</strong>
+                      </div>
+                      <div style={{ fontSize: '14px', color: '#166534', marginBottom: '8px' }}>
+                        🌐 Navegador: <strong>Chrome 127.0</strong>
+                      </div>
+                      <div style={{ fontSize: '14px', color: '#166534', marginBottom: '8px' }}>
+                        💻 Sistema: <strong>Windows 11</strong>
+                      </div>
+                      <div style={{ fontSize: '14px', color: '#166534' }}>
+                        📶 Conexão: <strong>Online</strong>
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '14px', color: '#166534', marginBottom: '8px' }}>
+                        🔄 Última atualização: <strong>29/Jul/2025</strong>
+                      </div>
+                      <div style={{ fontSize: '14px', color: '#166534', marginBottom: '8px' }}>
+                        ☁️ Servidor: <strong>São Paulo</strong>
+                      </div>
+                      <div style={{ fontSize: '14px', color: '#166534', marginBottom: '8px' }}>
+                        ⚡ Latência: <strong>45ms</strong>
+                      </div>
+                      <div style={{ fontSize: '14px', color: '#166534' }}>
+                        🔒 SSL: <strong>Ativo</strong>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Botões de Ação Global */}
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '16px',
+            padding: '24px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+            border: '1px solid #e2e8f0',
+            marginTop: '24px'
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: '16px'
+            }}>
+              <div>
+                <h3 style={{
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  margin: '0 0 4px 0',
+                  color: '#1a202c'
+                }}>
+                  💾 Salvar Configurações
+                </h3>
+                <p style={{
+                  fontSize: '14px',
+                  color: '#64748b',
+                  margin: 0
+                }}>
+                  Suas alterações serão aplicadas automaticamente
+                </p>
+              </div>
+              
+              <div style={{
+                display: 'flex',
+                gap: '12px'
+              }}>
+                <button
+                  onClick={() => {
+                    // Reset para valores padrão
+                    if (confirm('Deseja restaurar todas as configurações para os valores padrão?')) {
+                      handleResetConfiguracoes()
+                    }
+                  }}
+                  style={{
+                    backgroundColor: '#6b7280',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '12px 24px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }}
+                >
+                  🔄 Restaurar Padrão
+                </button>
+                
+                <button
+                  onClick={() => {
+                    alert('✅ Configurações salvas com sucesso!')
+                  }}
+                  style={{
+                    backgroundColor: '#10b981',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '12px 24px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }}
+                >
+                  💾 Salvar Tudo
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      {/* MODAIS */}
+      
+      {/* Modal: Editar Perfil */}
+      {showEditarPerfilModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          backgroundColor: 'rgba(0,0,0,0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 100,
+          backdropFilter: 'blur(5px)'
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '20px',
+            padding: '32px',
+            width: '90%',
+            maxWidth: '600px',
+            boxShadow: '0 25px 50px rgba(0,0,0,0.25)'
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '24px'
+            }}>
+              <h2 style={{
+                fontSize: '24px',
+                fontWeight: 'bold',
+                margin: 0,
+                color: '#1a202c'
+              }}>
+                ✏️ EDITAR PERFIL - {perfilEditando === 'seu' ? 'SEU' : perfilEditando === 'esposa' ? 'ESPOSA' : 'FAMÍLIA'}
+              </h2>
+              <button
+                onClick={() => setShowEditarPerfilModal(false)}
+                style={{
+                  backgroundColor: '#ef4444',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '40px',
+                  height: '40px',
+                  cursor: 'pointer',
+                  fontSize: '18px'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '16px',
+              marginBottom: '24px'
+            }}>
+              {perfilEditando === 'seu' && (
+                <>
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#374151',
+                      marginBottom: '6px'
+                    }}>
+                      📝 Nome:
+                    </label>
+                    <input
+                      type="text"
+                      value={perfilConfig.seuNome}
+                      onChange={(e) => setPerfilConfig(prev => ({
+                        ...prev,
+                        seuNome: e.target.value
+                      }))}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        border: '2px solid #e2e8f0',
+                        borderRadius: '8px',
+                        fontSize: '14px'
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#374151',
+                      marginBottom: '6px'
+                    }}>
+                      📧 Email:
+                    </label>
+                    <input
+                      type="email"
+                      value={perfilConfig.seuEmail}
+                      onChange={(e) => setPerfilConfig(prev => ({
+                        ...prev,
+                        seuEmail: e.target.value
+                      }))}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        border: '2px solid #e2e8f0',
+                        borderRadius: '8px',
+                        fontSize: '14px'
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#374151',
+                      marginBottom: '6px'
+                    }}>
+                      📱 Telefone:
+                    </label>
+                    <input
+                      type="tel"
+                      value={perfilConfig.seuTelefone}
+                      onChange={(e) => setPerfilConfig(prev => ({
+                        ...prev,
+                        seuTelefone: e.target.value
+                      }))}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        border: '2px solid #e2e8f0',
+                        borderRadius: '8px',
+                        fontSize: '14px'
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#374151',
+                      marginBottom: '6px'
+                    }}>
+                      💰 Renda Mensal:
+                    </label>
+                    <input
+                      type="number"
+                      value={perfilConfig.suaRenda}
+                      onChange={(e) => {
+                        const novaRenda = parseFloat(e.target.value) || 0
+                        const rendaEsposa = perfilConfig.rendaEsposa
+                        const rendaTotal = novaRenda + rendaEsposa
+                        const novaParticipacao = rendaTotal > 0 ? ((novaRenda / rendaTotal) * 100).toFixed(1) : 0
+                        const participacaoEsposa = rendaTotal > 0 ? ((rendaEsposa / rendaTotal) *                        100).toFixed(1) : 0
+                        
+                        setPerfilConfig(prev => ({
+                          ...prev,
+                          suaRenda: novaRenda,
+                          rendaTotal: rendaTotal,
+                          suaParticipacao: parseFloat(novaParticipacao),
+                          participacaoEsposa: parseFloat(participacaoEsposa)
+                        }))
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        border: '2px solid #e2e8f0',
+                        borderRadius: '8px',
+                        fontSize: '14px'
+                      }}
+                    />
+                  </div>
+                </>
+              )}
+
+              {perfilEditando === 'esposa' && (
+                <>
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#374151',
+                      marginBottom: '6px'
+                    }}>
+                      📝 Nome:
+                    </label>
+                    <input
+                      type="text"
+                      value={perfilConfig.nomeEsposa}
+                      onChange={(e) => setPerfilConfig(prev => ({
+                        ...prev,
+                        nomeEsposa: e.target.value
+                      }))}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        border: '2px solid #e2e8f0',
+                        borderRadius: '8px',
+                        fontSize: '14px'
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#374151',
+                      marginBottom: '6px'
+                    }}>
+                      📧 Email:
+                    </label>
+                    <input
+                      type="email"
+                      value={perfilConfig.emailEsposa}
+                      onChange={(e) => setPerfilConfig(prev => ({
+                        ...prev,
+                        emailEsposa: e.target.value
+                      }))}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        border: '2px solid #e2e8f0',
+                        borderRadius: '8px',
+                        fontSize: '14px'
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#374151',
+                      marginBottom: '6px'
+                    }}>
+                      📱 Telefone:
+                    </label>
+                    <input
+                      type="tel"
+                      value={perfilConfig.telefoneEsposa}
+                      onChange={(e) => setPerfilConfig(prev => ({
+                        ...prev,
+                        telefoneEsposa: e.target.value
+                      }))}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        border: '2px solid #e2e8f0',
+                        borderRadius: '8px',
+                        fontSize: '14px'
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#374151',
+                      marginBottom: '6px'
+                    }}>
+                      💰 Renda Mensal:
+                    </label>
+                    <input
+                      type="number"
+                      value={perfilConfig.rendaEsposa}
+                      onChange={(e) => {
+                        const novaRendaEsposa = parseFloat(e.target.value) || 0
+                        const suaRenda = perfilConfig.suaRenda
+                        const rendaTotal = suaRenda + novaRendaEsposa
+                        const participacaoEsposa = rendaTotal > 0 ? ((novaRendaEsposa / rendaTotal) * 100).toFixed(1) : 0
+                        const suaParticipacao = rendaTotal > 0 ? ((suaRenda / rendaTotal) * 100).toFixed(1) : 0
+                        
+                        setPerfilConfig(prev => ({
+                          ...prev,
+                          rendaEsposa: novaRendaEsposa,
+                          rendaTotal: rendaTotal,
+                          participacaoEsposa: parseFloat(participacaoEsposa),
+                          suaParticipacao: parseFloat(suaParticipacao)
+                        }))
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        border: '2px solid #e2e8f0',
+                        borderRadius: '8px',
+                        fontSize: '14px'
+                      }}
+                    />
+                  </div>
+                </>
+              )}
+
+              {perfilEditando === 'familia' && (
+                <>
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#374151',
+                      marginBottom: '6px'
+                    }}>
+                      👨‍👩‍👧‍👦 Nome da Família:
+                    </label>
+                    <input
+                      type="text"
+                      value={perfilConfig.nomeFamilia}
+                      onChange={(e) => setPerfilConfig(prev => ({
+                        ...prev,
+                        nomeFamilia: e.target.value
+                      }))}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        border: '2px solid #e2e8f0',
+                        borderRadius: '8px',
+                        fontSize: '14px'
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#374151',
+                      marginBottom: '6px'
+                    }}>
+                      🎯 Meta de Poupança (%):
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="50"
+                      value={perfilConfig.metaPoupanca}
+                      onChange={(e) => setPerfilConfig(prev => ({
+                        ...prev,
+                        metaPoupanca: parseInt(e.target.value) || 0
+                      }))}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        border: '2px solid #e2e8f0',
+                        borderRadius: '8px',
+                        fontSize: '14px'
+                      }}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div style={{
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'center'
+            }}>
+              <button 
+                onClick={() => setShowEditarPerfilModal(false)}
+                style={{
+                  backgroundColor: '#6b7280',
+                  color: 'white',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                ❌ Cancelar
+              </button>
+              <button 
+                onClick={handleSalvarPerfil}
+                style={{
+                  backgroundColor: '#10b981',
+                  color: 'white',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                ✅ Salvar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Editar Categoria */}
+      {showEditarCategoriaModal && categoriaSelecionada && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          backgroundColor: 'rgba(0,0,0,0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 100,
+          backdropFilter: 'blur(5px)'
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '20px',
+            padding: '32px',
+            width: '90%',
+            maxWidth: '500px',
+            boxShadow: '0 25px 50px rgba(0,0,0,0.25)'
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '24px'
+            }}>
+              <h2 style={{
+                fontSize: '24px',
+                fontWeight: 'bold',
+                margin: 0,
+                color: '#1a202c'
+              }}>
+                ✏️ EDITAR CATEGORIA
+              </h2>
+              <button
+                onClick={() => setShowEditarCategoriaModal(false)}
+                style={{
+                  backgroundColor: '#ef4444',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '40px',
+                  height: '40px',
+                  cursor: 'pointer',
+                  fontSize: '18px'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '16px',
+              marginBottom: '24px'
+            }}>
+              <div>
+                <label style={{
+                  display: 'block',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#374151',
+                  marginBottom: '6px'
+                }}>
+                  📝 Nome:
+                </label>
+                <input
+                  type="text"
+                  value={categoriaSelecionada.nome}
+                  onChange={(e) => setCategoriaSelecionada(prev => ({
+                    ...prev,
+                    nome: e.target.value
+                  }))}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    border: '2px solid #e2e8f0',
+                    borderRadius: '8px',
+                    fontSize: '14px'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{
+                  display: 'block',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#374151',
+                  marginBottom: '6px'
+                }}>
+                  🎨 Ícone:
+                </label>
+                <input
+                  type="text"
+                  value={categoriaSelecionada.icone}
+                  onChange={(e) => setCategoriaSelecionada(prev => ({
+                    ...prev,
+                    icone: e.target.value
+                  }))}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    border: '2px solid #e2e8f0',
+                    borderRadius: '8px',
+                    fontSize: '14px'
+                  }}
+                  placeholder="🏠"
+                />
+              </div>
+
+              <div style={{ gridColumn: 'span 2' }}>
+                <label style={{
+                  display: 'block',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#374151',
+                  marginBottom: '6px'
+                }}>
+                  🌈 Cor:
+                </label>
+                <div style={{
+                  display: 'flex',
+                  gap: '8px',
+                  flexWrap: 'wrap'
+                }}>
+                  {[
+                    '#3b82f6', '#10b981', '#f59e0b', '#ef4444', 
+                    '#8b5cf6', '#06b6d4', '#ec4899', '#84cc16'
+                  ].map(cor => (
+                    <button
+                      key={cor}
+                      onClick={() => setCategoriaSelecionada(prev => ({
+                        ...prev,
+                        cor: cor
+                      }))}
+                      style={{
+                        width: '40px',
+                        height: '40px',
+                        backgroundColor: cor,
+                        border: categoriaSelecionada.cor === cor ? '3px solid #1f2937' : '2px solid #e2e8f0',
+                        borderRadius: '8px',
+                        cursor: 'pointer'
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div style={{
+              backgroundColor: '#f8fafc',
+              borderRadius: '8px',
+              padding: '16px',
+              marginBottom: '24px',
+              textAlign: 'center'
+            }}>
+              <div style={{ fontSize: '32px', marginBottom: '8px' }}>
+                {categoriaSelecionada.icone}
+              </div>
+              <div style={{
+                fontSize: '16px',
+                fontWeight: '600',
+                color: categoriaSelecionada.cor
+              }}>
+                {categoriaSelecionada.nome}
+              </div>
+            </div>
+
+            <div style={{
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'center'
+            }}>
+              <button 
+                onClick={() => setShowEditarCategoriaModal(false)}
+                style={{
+                  backgroundColor: '#6b7280',
+                  color: 'white',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                ❌ Cancelar
+              </button>
+              <button 
+                onClick={handleSalvarCategoria}
+                style={{
+                  backgroundColor: '#10b981',
+                  color: 'white',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                ✅ Salvar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Backup */}
+      {showBackupModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          backgroundColor: 'rgba(0,0,0,0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 100,
+          backdropFilter: 'blur(5px)'
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '20px',
+            padding: '32px',
+            width: '90%',
+            maxWidth: '500px',
+            boxShadow: '0 25px 50px rgba(0,0,0,0.25)'
+          }}>
+            <div             style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '24px'
+            }}>
+              <h2 style={{
+                fontSize: '24px',
+                fontWeight: 'bold',
+                margin: 0,
+                color: '#1a202c'
+              }}>
+                🔄 FAZER BACKUP AGORA
+              </h2>
+              <button
+                onClick={() => setShowBackupModal(false)}
+                style={{
+                  backgroundColor: '#ef4444',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '40px',
+                  height: '40px',
+                  cursor: 'pointer',
+                  fontSize: '18px'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{
+              backgroundColor: '#f0fdf4',
+              border: '1px solid #bbf7d0',
+              borderRadius: '12px',
+              padding: '20px',
+              marginBottom: '24px'
+            }}>
+              <h3 style={{
+                fontSize: '16px',
+                fontWeight: 'bold',
+                color: '#166534',
+                marginBottom: '12px'
+              }}>
+                📋 O QUE SERÁ INCLUÍDO NO BACKUP:
+              </h3>
+              <ul style={{
+                margin: 0,
+                paddingLeft: '20px',
+                fontSize: '14px',
+                color: '#166534'
+              }}>
+                <li>✅ Todas as configurações pessoais</li>
+                <li>✅ Dados de perfil e família</li>
+                <li>✅ Categorias personalizadas</li>
+                <li>✅ Configurações de notificações</li>
+                <li>✅ Preferências visuais</li>
+                <li>✅ Configurações de segurança</li>
+              </ul>
+            </div>
+
+            <div style={{
+              backgroundColor: '#fef3c7',
+              border: '1px solid #fcd34d',
+              borderRadius: '12px',
+              padding: '16px',
+              marginBottom: '24px'
+            }}>
+              <div style={{
+                fontSize: '14px',
+                color: '#92400e',
+                textAlign: 'center'
+              }}>
+                ⚠️ <strong>Nota:</strong> Dados financeiros sensíveis são mantidos seguros no servidor
+              </div>
+            </div>
+
+            <div style={{
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'center'
+            }}>
+              <button 
+                onClick={() => setShowBackupModal(false)}
+                style={{
+                  backgroundColor: '#6b7280',
+                  color: 'white',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                ❌ Cancelar
+              </button>
+              <button 
+                onClick={handleFazerBackup}
+                style={{
+                  backgroundColor: '#166534',
+                  color: 'white',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                🔄 Fazer Backup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Exportar Dados */}
+      {showExportarModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          backgroundColor: 'rgba(0,0,0,0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 100,
+          backdropFilter: 'blur(5px)'
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '20px',
+            padding: '32px',
+            width: '90%',
+            maxWidth: '500px',
+            boxShadow: '0 25px 50px rgba(0,0,0,0.25)'
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '24px'
+            }}>
+              <h2 style={{
+                fontSize: '24px',
+                fontWeight: 'bold',
+                margin: 0,
+                color: '#1a202c'
+              }}>
+                📤 EXPORTAR CONFIGURAÇÕES
+              </h2>
+              <button
+                onClick={() => setShowExportarModal(false)}
+                style={{
+                  backgroundColor: '#ef4444',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '40px',
+                  height: '40px',
+                  cursor: 'pointer',
+                  fontSize: '18px'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{
+              backgroundColor: '#f0f9ff',
+              border: '1px solid #7dd3fc',
+              borderRadius: '12px',
+              padding: '20px',
+              marginBottom: '24px'
+            }}>
+              <h3 style={{
+                fontSize: '16px',
+                fontWeight: 'bold',
+                color: '#0c4a6e',
+                marginBottom: '12px'
+              }}>
+                📋 DADOS QUE SERÃO EXPORTADOS:
+              </h3>
+              <ul style={{
+                margin: 0,
+                paddingLeft: '20px',
+                fontSize: '14px',
+                color: '#0c4a6e'
+              }}>
+                <li>✅ Configurações de perfil</li>
+                <li>✅ Configurações financeiras</li>
+                <li>✅ Preferências de notificações</li>
+                <li>✅ Configurações visuais</li>
+                <li>✅ Configurações de segurança</li>
+                <li>✅ Estatísticas de uso</li>
+              </ul>
+            </div>
+
+            <div style={{
+              backgroundColor: '#fef3c7',
+              border: '1px solid #fcd34d',
+              borderRadius: '12px',
+              padding: '16px',
+              marginBottom: '24px'
+            }}>
+              <div style={{
+                fontSize: '14px',
+                color: '#92400e',
+                textAlign: 'center'
+              }}>
+                📁 <strong>Formato:</strong> Arquivo JSON com todas as configurações
+              </div>
+            </div>
+
+            <div style={{
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'center'
+            }}>
+              <button 
+                onClick={() => setShowExportarModal(false)}
+                style={{
+                  backgroundColor: '#6b7280',
+                  color: 'white',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                ❌ Cancelar
+              </button>
+              <button 
+                onClick={handleExportarDados}
+                style={{
+                  backgroundColor: '#92400e',
+                  color: 'white',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                📤 Exportar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Reset Configurações */}
+      {showResetModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          backgroundColor: 'rgba(0,0,0,0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 100,
+          backdropFilter: 'blur(5px)'
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '20px',
+            padding: '32px',
+            width: '90%',
+            maxWidth: '500px',
+            boxShadow: '0 25px 50px rgba(0,0,0,0.25)'
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '24px'
+            }}>
+              <h2 style={{
+                fontSize: '24px',
+                fontWeight: 'bold',
+                margin: 0,
+                color: '#dc2626'
+              }}>
+                ⚠️ RESETAR CONFIGURAÇÕES
+              </h2>
+              <button
+                onClick={() => setShowResetModal(false)}
+                style={{
+                  backgroundColor: '#ef4444',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '40px',
+                  height: '40px',
+                  cursor: 'pointer',
+                  fontSize: '18px'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{
+              backgroundColor: '#fef2f2',
+              border: '1px solid #fecaca',
+              borderRadius: '12px',
+              padding: '20px',
+              marginBottom: '24px'
+            }}>
+              <h3 style={{
+                fontSize: '16px',
+                fontWeight: 'bold',
+                color: '#dc2626',
+                marginBottom: '12px'
+              }}>
+                🚨 ATENÇÃO - AÇÃO IRREVERSÍVEL!
+              </h3>
+              <p style={{
+                fontSize: '14px',
+                color: '#dc2626',
+                margin: '0 0 12px 0'
+              }}>
+                Esta ação irá resetar <strong>TODAS</strong> as suas configurações para os valores padrão:
+              </p>
+              <ul style={{
+                margin: 0,
+                paddingLeft: '20px',
+                fontSize: '14px',
+                color: '#dc2626'
+              }}>
+                <li>❌ Configurações financeiras</li>
+                <li>❌ Preferências de notificações</li>
+                <li>❌ Configurações visuais</li>
+                <li>❌ Categorias personalizadas</li>
+                <li>❌ Todas as personalizações</li>
+              </ul>
+            </div>
+
+            <div style={{
+              backgroundColor: '#f0fdf4',
+              border: '1px solid #bbf7d0',
+              borderRadius: '12px',
+              padding: '16px',
+              marginBottom: '24px'
+            }}>
+              <div style={{
+                fontSize: '14px',
+                color: '#166534',
+                textAlign: 'center'
+              }}>
+                ✅ <strong>Seus dados financeiros permanecerão seguros</strong>
+              </div>
+            </div>
+
+            <div style={{
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'center'
+            }}>
+              <button 
+                onClick={() => setShowResetModal(false)}
+                style={{
+                  backgroundColor: '#6b7280',
+                  color: 'white',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                ❌ Cancelar
+              </button>
+              <button 
+                onClick={handleResetConfiguracoes}
+                style={{
+                  backgroundColor: '#dc2626',
+                  color: 'white',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                🗑️ Confirmar Reset
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CSS Animations */}
+      <style jsx>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.7; }
+        }
+        
+        @keyframes slideInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
+    </div>
+  )
+}
