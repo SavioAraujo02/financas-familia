@@ -19,42 +19,42 @@ const acoes = [
     title: 'Nova Receita',
     description: 'Cadastrar nova receita',
     icon: DollarSign,
-    href: '/dashboard/receitas',
+    href: '/receitas',  // ✅ CORRIGIDO
     className: 'bg-green-500 hover:bg-green-600 text-white'
   },
   {
     title: 'Nova Despesa',
     description: 'Registrar nova despesa',
     icon: TrendingDown,
-    href: '/dashboard/despesas',
+    href: '/despesas',  // ✅ CORRIGIDO
     className: 'bg-red-500 hover:bg-red-600 text-white'
   },
   {
     title: 'Pagar Fatura',
     description: 'Marcar fatura como paga',
     icon: CreditCard,
-    href: '/dashboard/cartoes',
+    href: '/cartoes',  // ✅ CORRIGIDO
     className: 'bg-blue-500 hover:bg-blue-600 text-white'
   },
   {
     title: 'Depositar Meta',
     description: 'Adicionar valor nas metas',
     icon: Target,
-    href: '/dashboard/metas',
+    href: '/metas',  // ✅ CORRIGIDO
     className: 'bg-purple-500 hover:bg-purple-600 text-white'
   },
   {
     title: 'Ver Relatório',
     description: 'Gerar relatório mensal',
     icon: BarChart3,
-    href: '/dashboard/relatorios',
+    href: '/relatorios',  // ✅ CORRIGIDO
     className: 'bg-indigo-500 hover:bg-indigo-600 text-white'
   },
   {
     title: 'Visualizar Gastos',
     description: 'Ver todas as despesas',
     icon: Eye,
-    href: '/dashboard/despesas/visualizar',
+    href: '/despesas/gerenciar',  // ✅ CORRIGIDO (baseado na sidebar)
     className: 'bg-gray-500 hover:bg-gray-600 text-white'
   }
 ]

@@ -113,30 +113,42 @@ export default function DespesasRevolucionaria() {
             
             // 2. DEFINIR ORÇAMENTO BASEADO NA RENDA
             const { data: profileData } = await profiles.get(currentUser.id)
-            const rendaFamiliar = profileData?.monthly_income || 10000
-            const orcamentoCalculado = Math.round(rendaFamiliar * 0.8) // 80% da renda para despesas
-            
-            // 3. CALCULAR PROGRESSO
-            const progressoCalculado = orcamentoCalculado > 0 ? 
-              Math.round((totalDespesasMes / orcamentoCalculado) * 100) : 0
-            
-            // 4. GERAR DICA INTELIGENTE
+            const rendaFamiliar = profileData?.monthly_income || 0
+
+            // ✅ VERIFICAR SE TEM RENDA CADASTRADA:
+            let orcamentoCalculado = 0
             let dicaInteligente = "Analisando seus gastos..."
-            if (progressoCalculado <= 70) {
-              dicaInteligente = `🎉 Excelente controle! Apenas ${progressoCalculado}% do orçamento usado. Vocês estão no caminho certo!`
-            } else if (progressoCalculado <= 85) {
-              dicaInteligente = `✅ Bom controle! ${progressoCalculado}% do orçamento usado. Mantenham o foco!`
-            } else if (progressoCalculado <= 100) {
-              dicaInteligente = `⚠️ Atenção! ${progressoCalculado}% do orçamento usado. Cuidado com gastos extras!`
+
+            if (rendaFamiliar === 0) {
+              // Sem renda cadastrada - usar orçamento padrão ou pedir para cadastrar
+              orcamentoCalculado = 0
+              dicaInteligente = "⚠️ Cadastre sua renda mensal para calcular o orçamento automaticamente!"
             } else {
-              dicaInteligente = `🚨 Orçamento estourado! ${progressoCalculado}% usado. Hora de revisar os gastos!`
+              orcamentoCalculado = Math.round(rendaFamiliar * 0.8)
+              
+              // 3. CALCULAR PROGRESSO
+              const progressoCalculado = orcamentoCalculado > 0 ? 
+                Math.round((totalDespesasMes / orcamentoCalculado) * 100) : 0
+
+              // 4. GERAR DICA INTELIGENTE
+              if (progressoCalculado <= 70) {
+                dicaInteligente = `🎉 Excelente controle! Apenas ${progressoCalculado}% do orçamento usado. Vocês estão no caminho certo!`
+              } else if (progressoCalculado <= 85) {
+                dicaInteligente = `✅ Bom controle! ${progressoCalculado}% do orçamento usado. Mantenham o foco!`
+              } else if (progressoCalculado <= 100) {
+                dicaInteligente = `⚠️ Atenção! ${progressoCalculado}% do orçamento usado. Cuidado com gastos extras!`
+              } else {
+                dicaInteligente = `🚨 Orçamento estourado! ${progressoCalculado}% usado. Hora de revisar os gastos!`
+              }
+              
+              // Atualizar progresso
+              setProgressoOrcamento(progressoCalculado)
             }
-            
+
             // 5. ATUALIZAR ESTADOS
             setTotalMes(totalDespesasMes)
             setOrcamentoMensal(orcamentoCalculado)
-            setProgressoOrcamento(progressoCalculado)
-            setFinBotDica(dicaInteligente)   
+            setFinBotDica(dicaInteligente)  
 
     } catch (error) {
       console.error('Erro ao carregar dados:', error)
@@ -169,7 +181,11 @@ export default function DespesasRevolucionaria() {
   }
 
   const calcularSimulador = () => {
-    const valor = parseFloat(formData.amount)
+    const valorTotal = parseFloat(formData.amount)
+    const valor = tipoFormulario === 'parcelada' ? 
+      valorTotal / formData.installments : 
+      valorTotal  // ✅ VALOR DA PARCELA SE FOR PARCELADA
+    
     const impacto = Math.round((valor / orcamentoMensal) * 100)
     
     let simulador = {
@@ -203,6 +219,23 @@ export default function DespesasRevolucionaria() {
         
         const valorParcela = valor / formData.installments
         simulador.sugestao = `${formData.installments}x de ${formatCurrency(valorParcela)} na fatura ${simulador.faturaDestino}`
+        simulador.sugestao = `${formData.installments}x de ${formatCurrency(valorParcela)} na fatura ${simulador.faturaDestino}`
+
+        // ✅ ADICIONAR ESTE BLOCO AQUI:
+        // Alertas inteligentes de fechamento
+        if (diaCompra <= diaFechamento && (diaFechamento - diaCompra) <= 3) {
+          simulador.alertas.push(`💡 DICA: Aguarde ${diaFechamento - diaCompra + 1} dias para a compra cair na próxima fatura`)
+        }
+
+        // Sugestão de melhor data
+        if (diaCompra <= diaFechamento && (diaFechamento - diaCompra) <= 5) {
+          const proximaFatura = new Date(dataCompra)
+          proximaFatura.setMonth(proximaFatura.getMonth() + 1)
+          const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+          const proximoMes = meses[proximaFatura.getMonth()]
+          
+          simulador.alertas.push(`🎯 SUGESTÃO: Compre após dia ${diaFechamento} para cair na fatura ${proximoMes}/${proximaFatura.getFullYear().toString().slice(-2)}`)
+        }
         
         // ✅ ALERTAS MAIS ESPECÍFICOS:
         if (diaCompra <= diaFechamento && (diaFechamento - diaCompra) <= 3) {
@@ -231,16 +264,38 @@ export default function DespesasRevolucionaria() {
         if (melhorCartao && percentualUso > 60) {
           simulador.alertas.push(`💡 Melhor usar ${melhorCartao.name} (menor impacto no limite)`)
         }
+        const percentualUsoReal = Math.round(((cartao.used_amount || 0) + valor) / cartao.credit_limit * 100)
+
+        if (percentualUsoReal > 80) {
+          simulador.alertas.push(`🚨 CRÍTICO: Cartão ficará com ${percentualUsoReal}% de uso!`)
+        } else if (percentualUsoReal > 60) {
+          simulador.alertas.push(`⚠️ ALTO: Cartão ficará com ${percentualUsoReal}% de uso`)
+        } else {
+          simulador.alertas.push(`✅ SEGURO: Cartão ficará com ${percentualUsoReal}% de uso`)
+        }
       }
     }
+    
 
     // ✅ ANÁLISE DE ORÇAMENTO:
-    if (impacto > 15) {
-      simulador.alertas.push(`🚨 Alto impacto no orçamento (${impacto}%)`)
-    } else if (impacto > 10) {
-      simulador.alertas.push(`⚠️ Impacto moderado no orçamento (${impacto}%)`)
+    // ✅ ANÁLISE DE ORÇAMENTO:
+    if (tipoFormulario === 'parcelada') {
+      if (impacto > 15) {
+        simulador.alertas.push(`🚨 Alto impacto mensal: ${formatCurrency(valor)} (${impacto}% do orçamento)`)
+      } else if (impacto > 10) {
+        simulador.alertas.push(`⚠️ Impacto moderado: ${formatCurrency(valor)}/mês (${impacto}% do orçamento)`)
+      } else {
+        simulador.alertas.push(`✅ Baixo impacto: ${formatCurrency(valor)}/mês (${impacto}% do orçamento)`)
+      }
+      simulador.alertas.push(`📊 Total da compra: ${formatCurrency(valorTotal)} em ${formData.installments}x`)
     } else {
-      simulador.alertas.push(`✅ Baixo impacto no orçamento (${impacto}%)`)
+      if (impacto > 15) {
+        simulador.alertas.push(`🚨 Alto impacto no orçamento (${impacto}%)`)
+      } else if (impacto > 10) {
+        simulador.alertas.push(`⚠️ Impacto moderado no orçamento (${impacto}%)`)
+      } else {
+        simulador.alertas.push(`✅ Baixo impacto no orçamento (${impacto}%)`)
+      }
     }
 
     // ✅ SUGESTÕES BASEADAS NO TIPO:
@@ -287,8 +342,8 @@ export default function DespesasRevolucionaria() {
           payment_method: formData.payment_method || 'debito',
           responsible: formData.responsible,
           status: i === 0 ? 'confirmado' : 'pendente',
-          recurring_id: recurringId,
-          due_day: parseInt(formData.due_day)
+          recurring_id: recurringId
+          // ✅ REMOVIDO: due_day
         })
       }
       
@@ -432,19 +487,21 @@ export default function DespesasRevolucionaria() {
   }, [despesas, filtros])
 
   // ADICIONAR esta função ANTES do handleSubmit (aproximadamente linha 140):
+  // ✅ SUBSTITUIR TODA A FUNÇÃO:
   const criarParcelas = async (transactionBase) => {
     const { transactions } = await import('@/lib/supabase')
+    const valorParcela = parseFloat(formData.amount) / formData.installments
     
     for (let i = 2; i <= formData.installments; i++) {
-      const dataOriginal = new Date(transactionBase.date)
-      dataOriginal.setMonth(dataOriginal.getMonth() + (i - 1))
+      const dataVencimento = new Date(transactionBase.date)
+      dataVencimento.setMonth(dataVencimento.getMonth() + (i - 1))
       
       const parcelaData = {
         ...transactionBase,
         installment_number: i,
-        date: dataOriginal.toISOString().split('T')[0],
+        date: dataVencimento.toISOString().split('T')[0],
         description: `${transactionBase.description} (${i}/${formData.installments})`,
-        amount: parseFloat(formData.amount) / formData.installments
+        amount: valorParcela
       }
       
       await transactions.create(parcelaData)
@@ -455,21 +512,8 @@ export default function DespesasRevolucionaria() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     
-    // POR esta validação mais completa:
     if (!formData.description || !formData.amount || !formData.category_id) {
       alert('Por favor, preencha todos os campos obrigatórios')
-      return
-    }
-
-    // Validação específica para parceladas
-    if (tipoFormulario === 'parcelada' && !formData.card_id) {
-      alert('Por favor, selecione um cartão para despesas parceladas')
-      return
-    }
-
-    // Validação específica para despesas fixas
-    if (tipoFormulario === 'fixa' && !formData.due_day) {
-      alert('Por favor, informe o dia de vencimento para despesas fixas')
       return
     }
   
@@ -488,11 +532,8 @@ export default function DespesasRevolucionaria() {
           category_id: formData.category_id,
           frequency: formData.frequency,
           start_date: formData.date,
-          due_day: parseInt(formData.due_day),
-          payment_method: formData.payment_method || 'debito',
-          responsible: formData.responsible,
-          is_active: true,
-          type: 'despesa'
+          is_active: true
+          // ✅ REMOVIDOS: due_day, payment_method, responsible
         }
         
         const { data: recurring } = await recurringTransactions.create(recurringData)
@@ -527,23 +568,22 @@ export default function DespesasRevolucionaria() {
         user_id: user.id,
         type: 'despesa',
         description: formData.description,
-        amount: parseFloat(formData.amount),
+        amount: tipoFormulario === 'parcelada' ? 
+          parseFloat(formData.amount) / formData.installments : 
+          parseFloat(formData.amount),  // ✅ VALOR DA PARCELA SE FOR PARCELADA
         date: formData.date,
         category_id: formData.category_id,
         payment_method: formData.payment_method,
         responsible: formData.responsible,
-        status: 'confirmado',
-        // ADICIONAR ESTES CAMPOS:
-        card_id: tipoFormulario === 'parcelada' ? formData.card_id : null,
-        installments: tipoFormulario === 'parcelada' ? formData.installments : 1,
-        installment_number: 1
+        status: 'confirmado'
       }
-  
+      
       // ADICIONAR campos específicos para parceladas
       if (tipoFormulario === 'parcelada') {
         transactionData.card_id = formData.card_id
         transactionData.installments = formData.installments
         transactionData.installment_number = 1
+        transactionData.description = `${formData.description} (1/${formData.installments})`  // ✅ INDICAR PARCELA
       }
   
       await transactions.create(transactionData)
@@ -583,6 +623,32 @@ export default function DespesasRevolucionaria() {
       currency: 'BRL'
     }).format(value)
   }
+
+  // ✅ ADICIONAR ESTA FUNÇÃO AQUI:
+  const gerarDadosEvolucao = () => {
+    const dados = []
+    const hoje = new Date()
+    const mesesNomes = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+    
+    for (let i = -5; i <= 0; i++) {
+      const mesData = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1)
+      const inicioMes = new Date(mesData.getFullYear(), mesData.getMonth(), 1).toISOString().split('T')[0]
+      const fimMes = new Date(mesData.getFullYear(), mesData.getMonth() + 1, 0).toISOString().split('T')[0]
+      
+      const despesasMes = despesas.filter(d => 
+        d.date >= inicioMes && d.date <= fimMes && d.status === 'confirmado'
+      )
+      const totalMes = despesasMes.reduce((sum, d) => sum + d.amount, 0)
+      
+      dados.push({
+        mes: mesesNomes[mesData.getMonth()],
+        valor: totalMes
+      })
+    }
+    
+    return dados
+  }
+  
 
   if (loading) {
     return (
@@ -1611,32 +1677,10 @@ export default function DespesasRevolucionaria() {
                     </tbody>
                   </table>
                 </div>
-              ) : (
-                <div style={{ height: '400px' }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={(() => {
-                    const hoje = new Date()
-                    const dadosGrafico = []
-                    
-                    for (let i = 5; i >= 0; i--) {
-                      const mesCalculo = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1)
-                      const inicioMes = new Date(mesCalculo.getFullYear(), mesCalculo.getMonth(), 1).toISOString().split('T')[0]
-                      const fimMes = new Date(mesCalculo.getFullYear(), mesCalculo.getMonth() + 1, 0).toISOString().split('T')[0]
-                      
-                      const despesasMes = despesas.filter(d => 
-                        d.date >= inicioMes && d.date <= fimMes && d.status === 'confirmado'
-                      )
-                      const totalMesCalc = despesasMes.reduce((sum, d) => sum + d.amount, 0)
-                      
-                      const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
-                      dadosGrafico.push({
-                        mes: meses[mesCalculo.getMonth()],
-                        valor: totalMesCalc
-                      })
-                    }
-                    
-                    return dadosGrafico
-                  })()}>
+                ) : (
+                  <div style={{ height: '400px' }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={gerarDadosEvolucao()}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="mes" />
                       <YAxis />
@@ -1702,29 +1746,7 @@ export default function DespesasRevolucionaria() {
                 </h3>
                 <div style={{ height: '120px' }}>
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={(() => {
-                      const hoje = new Date()
-                      const dadosGrafico = []
-                      
-                      for (let i = 5; i >= 0; i--) {
-                        const mesCalculo = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1)
-                        const inicioMes = new Date(mesCalculo.getFullYear(), mesCalculo.getMonth(), 1).toISOString().split('T')[0]
-                        const fimMes = new Date(mesCalculo.getFullYear(), mesCalculo.getMonth() + 1, 0).toISOString().split('T')[0]
-                        
-                        const despesasMes = despesas.filter(d => 
-                          d.date >= inicioMes && d.date <= fimMes && d.status === 'confirmado'
-                        )
-                        const totalMesCalc = despesasMes.reduce((sum, d) => sum + d.amount, 0)
-                        
-                        const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
-                        dadosGrafico.push({
-                          mes: meses[mesCalculo.getMonth()],
-                          valor: totalMesCalc
-                        })
-                      }
-                      
-                      return dadosGrafico
-                    })()}>
+                    <LineChart data={gerarDadosEvolucao()}>
                       <Line 
                         type="monotone" 
                         dataKey="valor" 
