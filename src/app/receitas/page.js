@@ -323,7 +323,7 @@ export default function ReceitasRevolucionaria() {
       const { transactions } = await import('@/lib/supabase')
       
       // Buscar receitas sem responsável definido
-      const receitasSemResponsavel = receitas.filter(r => !r.responsavel && !r.responsible)
+      const receitasSemResponsavel = receitas.filter(r => !r.responsavel)
       
       if (receitasSemResponsavel.length > 0) {
         console.log(`🔧 Corrigindo ${receitasSemResponsavel.length} receitas sem responsável`)
@@ -365,42 +365,22 @@ export default function ReceitasRevolucionaria() {
       if (uploadError) throw uploadError
       
       // Simular OCR (em produção, seria uma API real de OCR)
-      setTimeout(async () => {
-        const fakeOcrData = {
-          grossAmount: 8930.00,
-          netAmount: 6930.22,
-          deductions: {
-            inss: 682.66,
-            irrf: 845.12,
-            healthPlan: 280.00,
-            transport: 192.00
-          },
-          extras: {
-            overtime: 250.00,
-            nightShift: 180.00
-          }
-        }
-        
-        // Salvar no banco de dados
-        const currentDate = new Date()
-        const monthYear = `${(currentDate.getMonth() + 1).toString().padStart(2, '0')}/${currentDate.getFullYear()}`
-        
-        const payrollData = {
-          user_id: user.id,
-          month_year: monthYear,
-          gross_amount: fakeOcrData.grossAmount,
-          net_amount: fakeOcrData.netAmount,
-          deductions: fakeOcrData.deductions,
-          file_url: uploadData.publicUrl
-        }
-        
-        await payrolls.create(payrollData)
-        
-        setContrachequeData(fakeOcrData)
-        setOcrProcessing(false)
+      // ✅ Verificar se tem renda configurada
+      const { data: profileData } = await profiles.get(user.id)
+      const rendaFamiliar = profileData?.monthly_income || 0
+      
+      if (rendaFamiliar === 0) {
+        alert('⚠️ Configure sua renda mensal antes de processar contracheques!')
         setUploadingFile(false)
-        
-      }, 2000) // Simular processamento de 2 segundos
+        setOcrProcessing(false)
+        return
+      }
+      
+      // Implementação futura: OCR real
+      alert('📄 Funcionalidade de OCR será implementada em breve!')
+      setUploadingFile(false)
+      setOcrProcessing(false)
+      setShowContrachequeModal(false)
       
     } catch (error) {
       console.error('Erro ao processar contracheque:', error)
@@ -486,7 +466,7 @@ export default function ReceitasRevolucionaria() {
       
       // 1. CARREGAR PERFIL PARA RENDA
       const { data: profileData } = await profiles.get(currentUser.id)
-      const rendaFamiliar = profileData?.monthly_income || 10000
+      const rendaFamiliar = profileData?.monthly_income || 0
       setMetaMensal(rendaFamiliar)
       
       // 2. CARREGAR TODAS AS TRANSAÇÕES
@@ -529,21 +509,21 @@ export default function ReceitasRevolucionaria() {
       // ✅ CÁLCULO MAIS ROBUSTO COM DEBUG
       const receitasVoce = receitasMesAtual
       .filter(r => {
-        const resp = r.responsavel || r.responsible || 'voce' // Fallback para dados antigos
+        const resp = r.responsavel || 'voce' // Fallback para dados antigos
         return resp === 'voce'
       })
       .reduce((sum, r) => sum + r.amount, 0)
 
     const receitasEsposa = receitasMesAtual
       .filter(r => {
-        const resp = r.responsavel || r.responsible || 'voce'
+        const resp = r.responsavel || 'voce'
         return resp === 'esposa'
       })
       .reduce((sum, r) => sum + r.amount, 0)
 
     // ✅ DEBUG: Verificar se há receitas sem responsável definido
     const receitasSemResponsavel = receitasMesAtual
-      .filter(r => !r.responsavel && !r.responsible)
+      .filter(r => !r.responsavel && !r.responsavel)
       .reduce((sum, r) => sum + r.amount, 0)
 
     // Se há receitas sem responsável, distribuir proporcionalmente
@@ -736,7 +716,7 @@ export default function ReceitasRevolucionaria() {
         date: formData.date,
         category_id: formData.category_id,
         status: formData.status,
-        responsavel: formData.responsavel  // ✅ CORRIGIR: usar 'responsavel' em vez de 'responsible'
+        responsavel: formData.responsavel 
       }
 
       await transactions.create(transactionData)

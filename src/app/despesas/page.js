@@ -20,7 +20,7 @@ export default function DespesasRevolucionaria() {
     date: new Date().toISOString().split('T')[0],
     category_id: '',
     payment_method: 'dinheiro', // 'dinheiro', 'debito', 'credito'
-    responsible: 'voce',
+    responsavel: 'voce',
     // Para parceladas
     card_id: '',
     installments: 1,
@@ -340,7 +340,7 @@ export default function DespesasRevolucionaria() {
           date: dataVencimento.toISOString().split('T')[0],
           category_id: formData.category_id,
           payment_method: formData.payment_method || 'debito',
-          responsible: formData.responsible,
+          responsavel: formData.responsavel,
           status: i === 0 ? 'confirmado' : 'pendente',
           recurring_id: recurringId
           // ✅ REMOVIDO: due_day
@@ -381,7 +381,7 @@ export default function DespesasRevolucionaria() {
       
       // Filtro por responsável
       if (filtros.responsavel !== 'todos') {
-        filteredData = filteredData.filter(d => d.responsible === filtros.responsavel)
+        filteredData = filteredData.filter(d => d.responsavel === filtros.responsavel)
       }
       
       // Filtro por tipo
@@ -424,8 +424,8 @@ export default function DespesasRevolucionaria() {
                     despesa.payment_method === 'credito' ? 'Crédito' : 'Outros',
         'Parcelas': despesa.installments > 1 ? `${despesa.installment_number || 1}/${despesa.installments}` : '1x',
         'Status': despesa.status === 'confirmado' ? 'Confirmado' : 'Pendente',
-        'Responsável': despesa.responsible === 'voce' ? 'Você' : 
-                      despesa.responsible === 'esposa' ? 'Esposa' : 'Compartilhado'
+        'Responsável': despesa.responsavel === 'voce' ? 'Você' : 
+                      despesa.responsavel === 'esposa' ? 'Esposa' : 'Compartilhado'
       }))
 
       // Adicionar linha de totais
@@ -553,7 +553,7 @@ export default function DespesasRevolucionaria() {
           date: new Date().toISOString().split('T')[0],
           category_id: '',
           payment_method: 'dinheiro',
-          responsible: 'voce',
+          responsavel: 'voce',
           card_id: '',
           installments: 1,
           due_day: '',
@@ -574,7 +574,7 @@ export default function DespesasRevolucionaria() {
         date: formData.date,
         category_id: formData.category_id,
         payment_method: formData.payment_method,
-        responsible: formData.responsible,
+        responsavel: formData.responsavel,
         status: 'confirmado'
       }
       
@@ -602,7 +602,7 @@ export default function DespesasRevolucionaria() {
         date: new Date().toISOString().split('T')[0],
         category_id: '',
         payment_method: 'dinheiro',
-        responsible: 'voce',
+        responsavel: 'voce',
         card_id: '',
         installments: 1,
         due_day: '',
@@ -1228,7 +1228,7 @@ export default function DespesasRevolucionaria() {
                       date: new Date().toISOString().split('T')[0],
                       category_id: '',
                       payment_method: 'dinheiro',
-                      responsible: 'voce',
+                      responsavel: 'voce',
                       card_id: '',
                       installments: 1,
                       due_day: '',
@@ -1669,8 +1669,8 @@ export default function DespesasRevolucionaria() {
                             {new Date(despesa.date).toLocaleDateString('pt-BR')}
                           </td>
                           <td style={{ padding: '12px', textAlign: 'center', fontSize: '16px' }}>
-                            {despesa.responsible === 'voce' ? '👨' :
-                             despesa.responsible === 'esposa' ? '👩' : '👨👩'}
+                            {despesa.responsavel === 'voce' ? '👨' :
+                             despesa.responsavel === 'esposa' ? '👩' : '👨👩'}
                           </td>
                         </tr>
                       ))}

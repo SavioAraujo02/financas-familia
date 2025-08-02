@@ -219,7 +219,7 @@ const loadUserData = async () => {
     } else {
       setProfile({ 
         name: currentUser.email?.split('@')[0] || 'Usuário',
-        monthly_income: 10600 // Valor padrão
+        monthly_income: 0
       })
     }
 
@@ -344,7 +344,17 @@ const loadUserData = async () => {
     }
     
     // 8. CALCULAR DADOS DA FAMÍLIA
-    const rendaFamiliar = profileData?.monthly_income || 10600
+    const rendaFamiliar = profileData?.monthly_income || 0
+    
+    // ✅ ADICIONAR LOGO APÓS:
+    if (rendaFamiliar === 0) {
+      setFinBotDica("⚠️ Configure sua renda mensal para cálculos automáticos!")
+      setDadosFamilia(prev => ({
+        ...prev,
+        tituloNivel: "CONFIGURE SUA RENDA",
+        nivel: 0
+      }))
+    }
     const saldoAtual = totalReceitas - totalDespesas
     const percentualComprometido = Math.round((totalFaturas / rendaFamiliar) * 100)
     const percentualLivre = 100 - percentualComprometido
@@ -2124,12 +2134,7 @@ else if (nivel >= 3) tituloNivel = "APRENDENDO"
                   gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
                   gap: '16px'
                 }}>
-                  {proximosEventos.concat([
-                    { data: '02/Ago', descricao: '🏠 Aluguel', valor: 1800, extra: 'Fixo mensal' },
-                    { data: '05/Ago', descricao: '📱 Internet', valor: 120, extra: 'Fixo mensal' },
-                    { data: '10/Ago', descricao: '💳 C6 Bank', valor: 340, extra: '2 parcelas ativas' },
-                    { data: '15/Ago', descricao: '⚡ Energia', valor: 180, extra: 'Estimativa' }
-                  ]).map((evento, index) => (
+                  {proximosEventos.length > 0 ? proximosEventos.map((evento, index) => (
                     <div key={index} style={{
                       padding: '16px',
                       backgroundColor: index < proximosEventos.length ? '#f0f9ff' : '#f8fafc',
@@ -2175,7 +2180,30 @@ else if (nivel >= 3) tituloNivel = "APRENDENDO"
                         </div>
                       )}
                     </div>
-                  ))}
+                  )) : (
+                    <div style={{
+                      textAlign: 'center',
+                      padding: '40px',
+                      color: '#64748b'
+                    }}>
+                      📅 Nenhum evento encontrado
+                      <br />
+                      <button 
+                        onClick={() => window.location.href = '/despesas'}
+                        style={{
+                          backgroundColor: '#3b82f6',
+                          color: 'white',
+                          padding: '8px 16px',
+                          borderRadius: '6px',
+                          border: 'none',
+                          marginTop: '8px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        + Cadastrar despesa recorrente
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Resumo do Mês */}

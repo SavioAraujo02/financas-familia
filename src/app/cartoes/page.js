@@ -1181,7 +1181,11 @@ export default function CartoesRevolucionario() {
                       💰 TOTAL PRÓXIMOS 30 DIAS: {formatCurrency(proximasFaturas.reduce((sum, f) => sum + f.valor, 0))}
                     </div>
                     <div style={{ fontSize: '14px', color: '#0369a1', marginTop: '4px' }}>
-                      🎯 {Math.round((proximasFaturas.reduce((sum, f) => sum + f.valor, 0) / 10600) * 100)}% da renda familiar
+                    🎯 {(() => {
+                      const totalFaturas = proximasFaturas.reduce((sum, f) => sum + f.valor, 0)
+                      return profile?.monthly_income > 0 ? 
+                        Math.round((totalFaturas / profile.monthly_income) * 100) : 0
+                    })()}% da renda familiar
                     </div>
                   </div>
                 </div>
