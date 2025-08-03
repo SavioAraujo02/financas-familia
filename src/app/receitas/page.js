@@ -2,6 +2,15 @@
 import { useState, useEffect } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import Sidebar from '@/components/layout/Sidebar'
+import { ResumoRapido } from '@/components/receitas/ResumoRapido'
+import { FiltrosInteligentes } from '@/components/receitas/FiltrosInteligentes'
+import { NovaReceita } from '@/components/receitas/NovaReceita'
+import { ListaReceitas } from '@/components/receitas/ListaReceitas'
+import { AnaliseInteligente } from '@/components/receitas/AnaliseInteligente'
+
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 export default function ReceitasRevolucionaria() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -42,7 +51,7 @@ export default function ReceitasRevolucionaria() {
   const [filtros, setFiltros] = useState({
     periodo: 'este_mes',
     tipo: 'todas', // 'fixas', 'variaveis', 'todas'
-    responsavel: 'todos', // 'voce', 'esposa', 'todos'
+    responsible: 'todos', // 'voce', 'esposa', 'todos'
     busca: '',
     dataInicio: '',
     dataFim: '',
@@ -61,7 +70,7 @@ export default function ReceitasRevolucionaria() {
     date: new Date().toISOString().split('T')[0],
     category_id: '',
     status: 'confirmado',
-    responsavel: 'voce',
+    responsible: 'voce',
     frequencia: 'unica',
     recorrencia: {
       tipo: 'mensal',
@@ -184,8 +193,8 @@ export default function ReceitasRevolucionaria() {
         'Categoria': receita.categories?.name || 'Sem categoria',
         'Valor': receita.amount,
         'Status': receita.status === 'confirmado' ? 'Confirmado' : 'Pendente',
-        'Responsável': receita.responsavel === 'voce' ? 'Você' : 
-                      receita.responsavel === 'esposa' ? 'Esposa' : 'Compartilhado',
+        'Responsável': receita.responsible === 'voce' ? 'Você' : 
+                      receita.responsible === 'esposa' ? 'Esposa' : 'Compartilhado',
         'Tipo': receita.recurring_id ? 'Recorrente' : 'Única'
       }))
 
@@ -318,33 +327,33 @@ export default function ReceitasRevolucionaria() {
     }
   }
 
-  const corrigirResponsavelReceitas = async () => {
+  const corrigirresponsibleReceitas = async () => {
     try {
       const { transactions } = await import('@/lib/supabase')
       
       // Buscar receitas sem responsável definido
-      const receitasSemResponsavel = receitas.filter(r => !r.responsavel)
+      const receitasSemresponsible = receitas.filter(r => !r.responsible)
       
-      if (receitasSemResponsavel.length > 0) {
-        console.log(`🔧 Corrigindo ${receitasSemResponsavel.length} receitas sem responsável`)
+      if (receitasSemresponsible.length > 0) {
+        console.log(`🔧 Corrigindo ${receitasSemresponsible.length} receitas sem responsável`)
         
-        for (const receita of receitasSemResponsavel) {
+        for (const receita of receitasSemresponsible) {
           // Definir responsável baseado na descrição ou valor padrão
-          let novoResponsavel = 'voce'
+          let novoresponsible = 'voce'
           
           const desc = receita.description.toLowerCase()
           if (desc.includes('esposa') || desc.includes('ela') || desc.includes('mulher')) {
-            novoResponsavel = 'esposa'
+            novoresponsible = 'esposa'
           }
           
           await transactions.update(receita.id, {
-            responsavel: novoResponsavel
+            responsible: novoresponsible
           })
         }
         
         // Recarregar dados após correção
         await loadData()
-        alert(`✅ Corrigidas ${receitasSemResponsavel.length} receitas sem responsável definido!`)
+        alert(`✅ Corrigidas ${receitasSemresponsible.length} receitas sem responsável definido!`)
       }
       
     } catch (error) {
@@ -440,8 +449,10 @@ export default function ReceitasRevolucionaria() {
   }, [])
 
   useEffect(() => {
+    console.log('🔄 Receitas carregadas:', receitas.length) // DEBUG
     if (receitas.length > 0) {
       setReceitasFiltradas(receitas) // Inicializar com todas as receitas
+      console.log('✅ ReceitasFiltradas inicializadas:', receitas.length) // DEBUG
     }
   }, [receitas])
 
@@ -450,6 +461,34 @@ export default function ReceitasRevolucionaria() {
       loadMetasReceitas()
     }
   }, [user, receitas])
+
+  // Função para calcular próxima recorrência
+  const calcularProximaRecorrencia = (serie) => {
+    const hoje = new Date()
+    let proximaData = new Date(serie.start_date)
+    
+    // Avançar até encontrar data futura
+    while (proximaData <= hoje) {
+      switch (serie.frequency) {
+        case 'weekly':
+          proximaData.setDate(proximaData.getDate() + 7)
+          break
+        case 'monthly':
+          proximaData.setMonth(proximaData.getMonth() + 1)
+          break
+        case 'quarterly':
+          proximaData.setMonth(proximaData.getMonth() + 3)
+          break
+        case 'annually':
+          proximaData.setFullYear(proximaData.getFullYear() + 1)
+          break
+        default:
+          proximaData.setMonth(proximaData.getMonth() + 1)
+      }
+    }
+    
+    return proximaData
+  }
 
   const loadData = async () => {
     try {
@@ -467,12 +506,48 @@ export default function ReceitasRevolucionaria() {
       // 1. CARREGAR PERFIL PARA RENDA
       const { data: profileData } = await profiles.get(currentUser.id)
       const rendaFamiliar = profileData?.monthly_income || 0
+
+      console.log('💰 Renda familiar configurada:', rendaFamiliar)
+
+      if (rendaFamiliar === 0) {
+        console.log('⚠️ ATENÇÃO: Renda familiar não configurada!')
+        // Você pode definir uma meta padrão ou mostrar um aviso
+      }
+
       setMetaMensal(rendaFamiliar)
       
       // 2. CARREGAR TODAS AS TRANSAÇÕES
       const { data: transactionsData } = await transactions.getAll(currentUser.id)
       const receitasData = (transactionsData || []).filter(t => t.type === 'receita')
       setReceitas(receitasData)
+
+      // CORREÇÃO FORÇADA DE RESPONSÁVEIS
+      console.log('🔧 Verificando responsáveis das receitas...')
+      let receitasCorrigidas = 0
+
+      for (const receita of receitasData) {
+        if (!receita.responsible || receita.responsible === 'undefined' || receita.responsible === '') {
+          console.log(`🔧 Corrigindo receita: ${receita.description} - ID: ${receita.id}`)
+          
+          try {
+            await transactions.update(receita.id, {
+              responsible: 'voce'
+            })
+            receitasCorrigidas++
+          } catch (error) {
+            console.error('Erro ao corrigir receita:', receita.id, error)
+          }
+        }
+      }
+
+      if (receitasCorrigidas > 0) {
+        console.log(`✅ ${receitasCorrigidas} receitas corrigidas! Recarregando dados...`)
+        
+        // Recarregar dados após correção
+        const { data: transactionsDataAtualizada } = await transactions.getAll(currentUser.id)
+        const receitasDataAtualizada = (transactionsDataAtualizada || []).filter(t => t.type === 'receita')
+        setReceitas(receitasDataAtualizada)
+      }
       
       // 3. CARREGAR CATEGORIAS DE RECEITA
       const { data: categoriesData } = await categoriesAPI.getAll(currentUser.id)
@@ -502,55 +577,102 @@ export default function ReceitasRevolucionaria() {
       const { data: series } = await recurringTransactions.getAll(currentUser.id)
       setRecurringSeries(series || [])
   
-      // 6. CALCULAR DADOS DA FAMÍLIA REAIS
-      const rendaVoce = Math.round(rendaFamiliar * 0.604)
-      const rendaEsposa = rendaFamiliar - rendaVoce
-      
-      // ✅ CÁLCULO MAIS ROBUSTO COM DEBUG
-      const receitasVoce = receitasMesAtual
-      .filter(r => {
-        const resp = r.responsavel || 'voce' // Fallback para dados antigos
-        return resp === 'voce'
+      // 6. CALCULAR DADOS DA FAMÍLIA - DEBUG COMPLETO
+      console.log('🔍 =================================')
+      console.log('🔍 DEBUG: Calculando dados da família...')
+      console.log('📊 Total de receitas do mês:', totalReceitasMes)
+      console.log('📊 Receitas do mês atual:', receitasMesAtual.length)
+
+      // Vamos ver CADA receita individualmente
+      console.log('📋 LISTA COMPLETA DE RECEITAS DO MÊS:')
+      receitasMesAtual.forEach((receita, index) => {
+        console.log(`${index + 1}. ${receita.description} - R$ ${receita.amount} - Responsável: "${receita.responsible || 'SEM RESPONSÁVEL'}"`)
       })
-      .reduce((sum, r) => sum + r.amount, 0)
 
-    const receitasEsposa = receitasMesAtual
-      .filter(r => {
-        const resp = r.responsavel || 'voce'
-        return resp === 'esposa'
+      // Calcular receitas por responsável COM DEBUG
+      console.log('🔍 Filtrando por responsável...')
+
+      // LÓGICA CORRIGIDA - SEM DUPLICAÇÃO
+      const receitasVoce = receitasMesAtual.filter(r => {
+        const isVoce = r.responsible === 'voce'
+        console.log(`- ${r.description}: responsável="${r.responsible}" → isVoce=${isVoce}`)
+        return isVoce
       })
-      .reduce((sum, r) => sum + r.amount, 0)
 
-    // ✅ DEBUG: Verificar se há receitas sem responsável definido
-    const receitasSemResponsavel = receitasMesAtual
-      .filter(r => !r.responsavel && !r.responsavel)
-      .reduce((sum, r) => sum + r.amount, 0)
+      const receitasEsposa = receitasMesAtual.filter(r => {
+        const isEsposa = r.responsible === 'esposa'
+        console.log(`- ${r.description}: responsável="${r.responsible}" → isEsposa=${isEsposa}`)
+        return isEsposa
+      })
 
-    // Se há receitas sem responsável, distribuir proporcionalmente
-    const receitasVoceTotal = receitasVoce + (receitasSemResponsavel * 0.604)
-    const receitasEsposaTotal = receitasEsposa + (receitasSemResponsavel * 0.396)
-  
-    const dadosFamiliaReais = {
-      voce: { 
-        nome: "Você", 
-        total: receitasVoceTotal, 
-        percentual: totalReceitasMes > 0 ? ((receitasVoceTotal / totalReceitasMes) * 100).toFixed(1) : 60.4 
-      },
-      esposa: { 
-        nome: "Esposa", 
-        total: receitasEsposaTotal, 
-        percentual: totalReceitasMes > 0 ? ((receitasEsposaTotal / totalReceitasMes) * 100).toFixed(1) : 39.6 
+      const receitasCompartilhadas = receitasMesAtual.filter(r => {
+        const isCompartilhado = r.responsible === 'compartilhado'
+        console.log(`- ${r.description}: responsável="${r.responsible}" → isCompartilhado=${isCompartilhado}`)
+        return isCompartilhado
+      })
+
+      // Receitas sem responsável definido (dados antigos) - SEM FALLBACK
+      const receitasSemresponsible = receitasMesAtual.filter(r => {
+        const semResp = !r.responsible || r.responsible === '' || r.responsible === 'undefined'
+        console.log(`- ${r.description}: responsável="${r.responsible}" → semResponsável=${semResp}`)
+        return semResp
+      })
+
+      // Calcular totais
+      const totalVoce = receitasVoce.reduce((sum, r) => sum + r.amount, 0)
+      const totalEsposa = receitasEsposa.reduce((sum, r) => sum + r.amount, 0)
+      const totalCompartilhadas = receitasCompartilhadas.reduce((sum, r) => sum + r.amount, 0)
+      const totalSemresponsible = receitasSemresponsible.reduce((sum, r) => sum + r.amount, 0)
+
+      console.log('💰 TOTAIS POR CATEGORIA:')
+      console.log('- Você:', totalVoce)
+      console.log('- Esposa:', totalEsposa)
+      console.log('- Compartilhadas:', totalCompartilhadas)
+      console.log('- Sem Responsável:', totalSemresponsible)
+      console.log('- SOMA:', totalVoce + totalEsposa + totalCompartilhadas + totalSemresponsible)
+      console.log('- TOTAL ESPERADO:', totalReceitasMes)
+
+      // Distribuir receitas compartilhadas e sem responsável (50/50)
+      const metadeCompartilhadas = totalCompartilhadas / 2
+      const metadeSemresponsible = totalSemresponsible / 2
+
+      const finalVoce = totalVoce + metadeCompartilhadas + metadeSemresponsible
+      const finalEsposa = totalEsposa + metadeCompartilhadas + metadeSemresponsible
+
+      console.log('💰 CÁLCULO FINAL:')
+      console.log('- Você: base=' + totalVoce + ' + compartilhadas=' + metadeCompartilhadas + ' + semResp=' + metadeSemresponsible + ' = ' + finalVoce)
+      console.log('- Esposa: base=' + totalEsposa + ' + compartilhadas=' + metadeCompartilhadas + ' + semResp=' + metadeSemresponsible + ' = ' + finalEsposa)
+      console.log('- SOMA FINAL:', finalVoce + finalEsposa)
+
+      // Calcular percentuais REAIS
+      const percentualVoce = totalReceitasMes > 0 ? ((finalVoce / totalReceitasMes) * 100).toFixed(1) : 0
+      const percentualEsposa = totalReceitasMes > 0 ? ((finalEsposa / totalReceitasMes) * 100).toFixed(1) : 0
+
+      const dadosFamiliaReais = {
+        voce: { 
+          nome: "Você", 
+          total: finalVoce, 
+          percentual: percentualVoce
+        },
+        esposa: { 
+          nome: "Esposa", 
+          total: finalEsposa, 
+          percentual: percentualEsposa
+        }
       }
-    }
+
+      console.log('✅ RESULTADO FINAL:', dadosFamiliaReais)
+      console.log('🔍 =================================')
 
     // ✅ DEBUG: Log para verificar os cálculos
     console.log('📊 DEBUG RESUMO FAMILIAR:', {
       totalReceitasMes,
       receitasVoce,
       receitasEsposa,
-      receitasSemResponsavel,
-      receitasVoceTotal,
-      receitasEsposaTotal,
+      receitasCompartilhadas,
+      receitasSemresponsible,
+      totalVoce,
+      totalEsposa,
       dadosFamiliaReais
     })
   
@@ -558,53 +680,72 @@ export default function ReceitasRevolucionaria() {
       setDadosFamiliaCalculado(dadosFamiliaReais)
 
       // 7. CALCULAR PRÓXIMOS RECEBIMENTOS REAIS
+      console.log('🔮 Calculando próximos recebimentos...')
       const dataLimite = new Date()
       dataLimite.setDate(dataLimite.getDate() + 30) // Próximos 30 dias
-      
+
       const proximosRecebimentosReais = []
-      
-      // Receitas recorrentes futuras
-      if (series && series.length > 0) {
+
+      // 1. Buscar receitas pendentes dos próximos 30 dias
+      const receitasPendentes = receitasData.filter(r => {
+        const dataReceita = new Date(r.date)
+        return dataReceita > hoje && dataReceita <= dataLimite && r.status === 'pendente'
+      })
+
+      console.log('📅 Receitas pendentes próximos 30 dias:', receitasPendentes.length)
+
+      receitasPendentes.forEach(receita => {
+        console.log('📝 Adicionando receita pendente:', receita.description, receita.date)
+        proximosRecebimentosReais.push({
+          data: new Date(receita.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }),
+          descricao: receita.description,
+          valor: receita.amount,
+          responsible: receita.responsible || 'voce',
+          dataOrdem: new Date(receita.date)
+        })
+      })
+
+      // 2. Se não há receitas pendentes, buscar próximas recorrências (APENAS UMA VEZ POR SÉRIE)
+      if (proximosRecebimentosReais.length === 0 && series && series.length > 0) {
+        console.log('📊 Calculando próximas recorrências...')
+        console.log('📊 Séries ativas encontradas:', series.filter(s => s.is_active).length)
+        
+        const seriesProcessadas = new Set() // ✅ EVITAR DUPLICAÇÃO
+        
         series.forEach(serie => {
-          if (serie.is_active) {
-            let proximaData = new Date(serie.start_date)
+          if (serie.is_active && !seriesProcessadas.has(serie.id)) { // ✅ VERIFICAR SE JÁ FOI PROCESSADA
+            console.log('🔄 Processando série:', serie.title, 'ID:', serie.id)
             
-            // Calcular próxima data baseada na frequência
-            while (proximaData <= dataLimite) {
-              if (proximaData > hoje) {
-                proximosRecebimentosReais.push({
-                  data: proximaData.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }),
-                  descricao: serie.title,
-                  valor: serie.amount,
-                  responsavel: 'voce', // Por padrão
-                  dataOrdem: new Date(proximaData)
-                })
-              }
+            const proximaData = calcularProximaRecorrencia(serie)
+            if (proximaData && proximaData <= dataLimite) {
+              console.log('📅 Próxima data calculada:', proximaData.toLocaleDateString('pt-BR'))
               
-              // Incrementar data baseado na frequência
-              switch (serie.frequency) {
-                case 'weekly':
-                  proximaData.setDate(proximaData.getDate() + 7)
-                  break
-                case 'monthly':
-                  proximaData.setMonth(proximaData.getMonth() + 1)
-                  break
-                case 'quarterly':
-                  proximaData.setMonth(proximaData.getMonth() + 3)
-                  break
-                case 'annually':
-                  proximaData.setFullYear(proximaData.getFullYear() + 1)
-                  break
-                default:
-                  proximaData.setMonth(proximaData.getMonth() + 1)
-              }
+              proximosRecebimentosReais.push({
+                data: proximaData.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }),
+                descricao: `${serie.title} (Recorrente)`,
+                valor: serie.amount,
+                responsible: 'voce',
+                dataOrdem: proximaData
+              })
+              
+              seriesProcessadas.add(serie.id) // ✅ MARCAR COMO PROCESSADA
             }
           }
         })
       }
-      
-      // Ordenar por data e pegar os primeiros 4
+
+      // 3. Ordenar por data e pegar os primeiros 4
       proximosRecebimentosReais.sort((a, b) => a.dataOrdem - b.dataOrdem)
+      const proximosLimitados = proximosRecebimentosReais.slice(0, 4) // ✅ LIMITAR A 4
+
+      console.log('✅ Próximos recebimentos finais:', proximosLimitados.length)
+      proximosLimitados.forEach((p, i) => {
+        console.log(`${i + 1}. ${p.descricao} - ${p.data} - ${formatCurrency(p.valor)}`)
+      })
+
+      // ✅ USAR A VERSÃO LIMITADA
+      setProximosRecebimentosCalculado(proximosLimitados)
+  
   
       // 8. CALCULAR EVOLUÇÃO DOS ÚLTIMOS 6 MESES
       const evolucaoReal = []
@@ -716,7 +857,7 @@ export default function ReceitasRevolucionaria() {
         date: formData.date,
         category_id: formData.category_id,
         status: formData.status,
-        responsavel: formData.responsavel 
+        responsible: formData.responsible 
       }
 
       await transactions.create(transactionData)
@@ -729,7 +870,7 @@ export default function ReceitasRevolucionaria() {
         date: new Date().toISOString().split('T')[0],
         category_id: '',
         status: 'confirmado',
-        responsavel: 'voce',
+        responsible: 'voce',
         frequencia: 'unica'
       })
       
@@ -740,15 +881,28 @@ export default function ReceitasRevolucionaria() {
   }
 
   // Função para salvar recorrência
+// Função para salvar recorrência - VERSÃO CORRIGIDA
 const handleRecurrenceSave = async () => {
   try {
+    console.log('🔄 Iniciando criação de série recorrente...')
+    
     if (!formData.description || !formData.amount || !formData.category_id) {
       alert('Por favor, preencha todos os campos obrigatórios primeiro')
       return
     }
 
-    const { recurringTransactions } = await import('@/lib/supabase')
+    const { recurringTransactions, transactions } = await import('@/lib/supabase')
     
+    console.log('📝 Dados da recorrência:', {
+      title: formData.description,
+      amount: parseFloat(formData.amount),
+      category_id: formData.category_id,
+      frequency: recurrenceData.frequency,
+      startDate: recurrenceData.startDate,
+      generateFor: recurrenceData.generateFor
+    })
+    
+    // 1. Criar a série recorrente
     const recurringData = {
       user_id: user.id,
       title: formData.description,
@@ -757,18 +911,87 @@ const handleRecurrenceSave = async () => {
       frequency: recurrenceData.frequency,
       start_date: recurrenceData.startDate,
       end_date: recurrenceData.indefinite ? null : recurrenceData.endDate,
-      total_occurrences: recurrenceData.indefinite ? null : parseInt(recurrenceData.occurrences),
+      total_occurrences: recurrenceData.indefinite ? null : parseInt(recurrenceData.generateFor),
       is_active: true
     }
 
-    const { data: recurring } = await recurringTransactions.create(recurringData)
+    console.log('💾 Criando série recorrente...')
+    const { data: recurring, error: recurringError } = await recurringTransactions.create(recurringData)
     
-    if (recurring) {
-      await recurringTransactions.generateTransactions(recurring.id, parseInt(recurrenceData.generateFor))
+    if (recurringError) {
+      console.error('❌ Erro ao criar série:', recurringError)
+      alert('Erro ao criar série recorrente: ' + recurringError.message)
+      return
+    }
+    
+    console.log('✅ Série criada:', recurring)
+    
+    // 2. Gerar transações futuras
+    if (recurring && recurring.length > 0) {
+      const serieId = recurring[0].id
+      console.log('📅 Gerando transações para série ID:', serieId)
+      
+      const transacoesGeradas = []
+      const dataInicio = new Date(recurrenceData.startDate)
+      const quantidadeMeses = parseInt(recurrenceData.generateFor)
+      
+      for (let i = 0; i < quantidadeMeses; i++) {
+        const dataTransacao = new Date(dataInicio)
+        
+        // Calcular data baseada na frequência
+        switch (recurrenceData.frequency) {
+          case 'weekly':
+            dataTransacao.setDate(dataInicio.getDate() + (i * 7))
+            break
+          case 'monthly':
+            dataTransacao.setMonth(dataInicio.getMonth() + i)
+            break
+          case 'quarterly':
+            dataTransacao.setMonth(dataInicio.getMonth() + (i * 3))
+            break
+          case 'annually':
+            dataTransacao.setFullYear(dataInicio.getFullYear() + i)
+            break
+          default:
+            dataTransacao.setMonth(dataInicio.getMonth() + i)
+        }
+        
+        const transacaoData = {
+          user_id: user.id,
+          category_id: formData.category_id,
+          type: 'receita',
+          amount: parseFloat(formData.amount),
+          description: formData.description,
+          date: dataTransacao.toISOString().split('T')[0],
+          status: i === 0 ? 'confirmado' : 'pendente', // Primeira como confirmada, resto pendente
+          recurring_id: serieId,
+          responsible: formData.responsavel || 'voce'
+        }
+        
+        transacoesGeradas.push(transacaoData)
+      }
+      
+      console.log(`📊 Criando ${transacoesGeradas.length} transações...`)
+      
+      // Criar todas as transações
+      for (const transacao of transacoesGeradas) {
+        console.log(`📝 Criando transação: ${transacao.description} - ${transacao.date}`)
+        const { error: transactionError } = await transactions.create(transacao)
+        
+        if (transactionError) {
+          console.error('❌ Erro ao criar transação:', transactionError)
+        }
+      }
+      
+      console.log('✅ Todas as transações criadas!')
+      
+      // 3. Recarregar dados
+      console.log('🔄 Recarregando dados...')
       await loadData()
+      
+      // 4. Fechar modal e limpar formulário
       setShowRecurrenceModal(false)
       
-      // Limpar formulário
       setFormData({
         description: '',
         amount: '',
@@ -779,24 +1002,42 @@ const handleRecurrenceSave = async () => {
         frequencia: 'unica'
       })
       
-      alert('Série de recorrência criada com sucesso!')
+      setRecurrenceData({
+        frequency: 'monthly',
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: '',
+        indefinite: true,
+        occurrences: 12,
+        generateFor: '12'
+      })
+      
+      alert(`🎉 Série recorrente criada com sucesso!\n\n📊 ${transacoesGeradas.length} receitas geradas\n💰 Total projetado: ${formatCurrency(parseFloat(formData.amount) * transacoesGeradas.length)}`)
+      
+    } else {
+      console.error('❌ Série não foi criada corretamente')
+      alert('Erro: Série não foi criada corretamente')
     }
+    
   } catch (error) {
-    console.error('Erro ao criar recorrência:', error)
-    alert('Erro ao criar recorrência. Tente novamente.')
+    console.error('❌ Erro geral ao criar recorrência:', error)
+    alert('Erro ao criar recorrência: ' + error.message)
   }
 }
 
 // Estados para receitas filtradas
 const [receitasFiltradas, setReceitasFiltradas] = useState([])
 
-const applyFilters = async (periodo, responsavel, busca) => {
+const applyFilters = async (periodo, responsible, busca) => {
   try {
+    console.log('🔍 Aplicando filtros:', { periodo, responsible, busca }) // DEBUG
+    
     const { auth, transactions } = await import('@/lib/supabase')
     const { user: currentUser } = await auth.getUser()
     
     const { data: transactionsData } = await transactions.getAll(currentUser.id)
-    const receitasData = (transactionsData || []).filter(t => t.type === 'receita')
+    let receitasData = (transactionsData || []).filter(t => t.type === 'receita')
+    
+    console.log('📊 Receitas antes do filtro:', receitasData.length) // DEBUG
     
     const hoje = new Date()
     let filteredData = [...receitasData]
@@ -806,31 +1047,39 @@ const applyFilters = async (periodo, responsavel, busca) => {
       const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0]
       const fimMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).toISOString().split('T')[0]
       filteredData = filteredData.filter(r => r.date >= inicioMes && r.date <= fimMes)
+      console.log('📅 Filtro este_mes aplicado:', filteredData.length) // DEBUG
     } else if (periodo === 'fixas') {
       filteredData = filteredData.filter(r => r.recurring_id !== null)
+      console.log('💰 Filtro fixas aplicado:', filteredData.length) // DEBUG
     } else if (periodo === 'variaveis') {
       filteredData = filteredData.filter(r => r.recurring_id === null)
+      console.log('🔄 Filtro variáveis aplicado:', filteredData.length) // DEBUG
     }
     
     // Filtro por responsável
-    if (responsavel === 'voce') {
-      filteredData = filteredData.filter(r => r.responsavel === 'voce')
-    } else if (responsavel === 'esposa') {
-      filteredData = filteredData.filter(r => r.responsavel === 'esposa')
+    if (responsible === 'voce') {
+      filteredData = filteredData.filter(r => (r.responsible || 'voce') === 'voce')
+      console.log('👨 Filtro você aplicado:', filteredData.length) // DEBUG
+    } else if (responsible === 'esposa') {
+      filteredData = filteredData.filter(r => r.responsible === 'esposa')
+      console.log('👩 Filtro esposa aplicado:', filteredData.length) // DEBUG
     }
     
     // Filtro por busca
-    if (busca) {
+    if (busca && busca.trim() !== '') {
       filteredData = filteredData.filter(r => 
         r.description.toLowerCase().includes(busca.toLowerCase())
       )
+      console.log('🔍 Filtro busca aplicado:', filteredData.length) // DEBUG
     }
+    
+    console.log('✅ Resultado final:', filteredData.length) // DEBUG
     
     // ✅ IMPORTANTE: Atualizar o estado
     setReceitasFiltradas(filteredData)
     
   } catch (error) {
-    console.error('Erro ao aplicar filtros:', error)
+    console.error('❌ Erro ao aplicar filtros:', error)
   }
 }
 
@@ -857,8 +1106,8 @@ const applyAdvancedFilters = async () => {
     }
     
     // Aplicar outros filtros
-    if (filtros.responsavel !== 'todos') {
-      receitasData = receitasData.filter(r => r.responsavel === filtros.responsavel)
+    if (filtros.responsible !== 'todos') {
+      receitasData = receitasData.filter(r => r.responsible === filtros.responsible)
     }
     
     if (filtros.busca) {
@@ -955,7 +1204,7 @@ const handleCancelSeries = async () => {
       await transactions.update(receitaId, {
         description: editData.description,
         amount: parseFloat(editData.amount || 0),
-        responsavel: editData.responsavel
+        responsible: editData.responsible
       })
       
       await loadData() // Recarregar dados
@@ -988,8 +1237,8 @@ const handleCancelSeries = async () => {
     }
   }
 
-  const getResponsavelIcon = (responsavel) => {
-    switch (responsavel) {
+  const getResponsavelIcon = (responsible) => {
+    switch (responsible) {
       case 'voce': return '👨'
       case 'esposa': return '👩'
       case 'compartilhado': return '👨👩'
@@ -1069,7 +1318,7 @@ const handleCancelSeries = async () => {
               </button>
               
               <div>
-                <h1 style={{ 
+              <h1 style={{ 
                   fontSize: '28px', 
                   fontWeight: 'bold', 
                   margin: 0,
@@ -1079,8 +1328,14 @@ const handleCancelSeries = async () => {
                 }}>
                   💰 RECEITAS
                   <span style={{ fontSize: '18px', opacity: 0.9 }}>
-                    | Mês Atual: {formatCurrency(totalMes)}
-                    | Meta: {formatCurrency(metaMensal)} ({progressoMeta}%)
+                    {(() => {
+                      const diferenca = totalMes - metaMensal
+                      const metaAtingida = diferenca >= 0
+                      
+                      return metaAtingida 
+                        ? `| Mês Atual: ${formatCurrency(totalMes)} | Meta: ${formatCurrency(metaMensal)} (✅ ${progressoMeta}%)`
+                        : `| Mês Atual: ${formatCurrency(totalMes)} | Meta: ${formatCurrency(metaMensal)} (${progressoMeta}%)`
+                    })()}
                   </span>
                 </h1>
               </div>
@@ -1093,25 +1348,37 @@ const handleCancelSeries = async () => {
               borderRadius: '12px',
               padding: '8px 12px'
             }}>
-              <div style={{ fontSize: '12px', marginBottom: '4px', textAlign: 'center' }}>
-                Meta Mensal: {progressoMeta}%
-              </div>
-              <div style={{
-                backgroundColor: 'rgba(255,255,255,0.3)',
-                borderRadius: '8px',
-                height: '6px',
-                overflow: 'hidden'
-              }}>
-                <div style={{
-                  backgroundColor: 'white',
-                  height: '100%',
-                  width: `${Math.min(progressoMeta, 100)}%`,
-                  transition: 'width 0.5s ease'
-                }} />
-              </div>
-              <div style={{ fontSize: '11px', marginTop: '4px', textAlign: 'center' }}>
-                Faltam: {formatCurrency(metaMensal - totalMes)}
-              </div>
+              {(() => {
+                const diferenca = totalMes - metaMensal
+                const metaAtingida = diferenca >= 0
+                
+                return (
+                  <>
+                    <div style={{ fontSize: '12px', marginBottom: '4px', textAlign: 'center' }}>
+                      {metaAtingida ? `🎉 Meta atingida: ${progressoMeta}%` : `Meta Mensal: ${progressoMeta}%`}
+                    </div>
+                    <div style={{
+                      backgroundColor: 'rgba(255,255,255,0.3)',
+                      borderRadius: '8px',
+                      height: '6px',
+                      overflow: 'hidden'
+                    }}>
+                      <div style={{
+                        backgroundColor: metaAtingida ? '#10b981' : 'white',
+                        height: '100%',
+                        width: `${Math.min(progressoMeta, 100)}%`,
+                        transition: 'width 0.5s ease'
+                      }} />
+                    </div>
+                    <div style={{ fontSize: '11px', marginTop: '4px', textAlign: 'center' }}>
+                      {metaAtingida 
+                        ? `Excedeu: +${formatCurrency(diferenca)}`
+                        : `Faltam: ${formatCurrency(-diferenca)}`
+                      }
+                    </div>
+                  </>
+                )
+              })()}
             </div>
           </div>
           
@@ -1153,400 +1420,16 @@ const handleCancelSeries = async () => {
             gap: '24px',
             marginBottom: '24px'
           }}>
-            {/* Nova Receita */}
-            <div style={{
-              backgroundColor: 'white',
-              borderRadius: '16px',
-              padding: '24px',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              border: '1px solid #e2e8f0'
-            }}>
-              <h2 style={{
-                fontSize: '20px',
-                fontWeight: 'bold',
-                margin: '0 0 20px 0',
-                color: '#1a202c',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px'
-              }}>
-                💰 NOVA RECEITA
-              </h2>
-
-              {/* Abas do Formulário */}
-              <div style={{
-                display: 'flex',
-                gap: '8px',
-                marginBottom: '20px',
-                borderBottom: '1px solid #e2e8f0',
-                paddingBottom: '12px'
-              }}>
-                {[
-                  { id: 'manual', label: '📝 Manual', desc: 'Entrada manual' },
-                  { id: 'contracheque', label: '📄 Contracheque', desc: 'Upload/OCR' },
-                  { id: 'automatica', label: '📊 Automática', desc: 'Recorrente' }
-                ].map(tab => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setFormMode(tab.id)}
-                    style={{
-                      flex: 1,
-                      padding: '12px',
-                      backgroundColor: formMode === tab.id ? '#10b981' : '#f8fafc',
-                      color: formMode === tab.id ? 'white' : '#64748b',
-                      border: 'none',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease'
-                    }}
-                  >
-                    <div>{tab.label}</div>
-                    <div style={{ fontSize: '10px', opacity: 0.8 }}>{tab.desc}</div>
-                  </button>
-                ))}
-              </div>
-
-              {/* Formulário Manual */}
-              {formMode === 'manual' && (
-                <form onSubmit={handleSubmit}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                    <div>
-                      <label style={{
-                        display: 'block',
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        color: '#374151',
-                        marginBottom: '6px'
-                      }}>
-                        📝 Descrição *
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.description}
-                        onChange={(e) => setFormData({...formData, description: e.target.value})}
-                        placeholder="Salário, Freelance, Aluguel..."
-                        required
-                        style={{
-                          width: '100%',
-                          padding: '12px',
-                          border: '2px solid #e2e8f0',
-                          borderRadius: '8px',
-                          fontSize: '14px',
-                          boxSizing: 'border-box'
-                        }}
-                      />
-                    </div>
-
-                    <div>
-                      <label style={{
-                        display: 'block',
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        color: '#374151',
-                        marginBottom: '6px'
-                      }}>
-                        💵 Valor (R$) *
-                      </label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={formData.amount}
-                        onChange={(e) => setFormData({...formData, amount: e.target.value})}
-                        placeholder="0,00"
-                        required
-                        style={{
-                          width: '100%',
-                          padding: '12px',
-                          border: '2px solid #e2e8f0',
-                          borderRadius: '8px',
-                          fontSize: '14px',
-                          boxSizing: 'border-box'
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                    <div>
-                      <label style={{
-                        display: 'block',
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        color: '#374151',
-                        marginBottom: '6px'
-                      }}>
-                        🏷️ Categoria *
-                      </label>
-                      <select
-                        value={formData.category_id}
-                        onChange={(e) => setFormData({...formData, category_id: e.target.value})}
-                        required
-                        style={{
-                          width: '100%',
-                          padding: '12px',
-                          border: '2px solid #e2e8f0',
-                          borderRadius: '8px',
-                          fontSize: '14px',
-                          boxSizing: 'border-box',
-                          backgroundColor: 'white'
-                        }}
-                      >
-                        <option value="">Selecione...</option>
-                        {categories.map(cat => (
-                          <option key={cat.id} value={cat.id}>
-                            {cat.icon} {cat.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label style={{
-                        display: 'block',
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        color: '#374151',
-                        marginBottom: '6px'
-                      }}>
-                        📅 Data
-                      </label>
-                      <input
-                        type="date"
-                        value={formData.date}
-                        onChange={(e) => setFormData({...formData, date: e.target.value})}
-                        style={{
-                          width: '100%',
-                          padding: '12px',
-                          border: '2px solid #e2e8f0',
-                          borderRadius: '8px',
-                          fontSize: '14px',
-                          boxSizing: 'border-box'
-                        }}
-                      />
-                    </div>
-
-                    <div>
-                      <label style={{
-                        display: 'block',
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        color: '#374151',
-                        marginBottom: '6px'
-                      }}>
-                        👤 Responsável
-                      </label>
-                      <select
-                        value={formData.responsavel}
-                        onChange={(e) => setFormData({...formData, responsavel: e.target.value})}
-                        style={{
-                          width: '100%',
-                          padding: '12px',
-                          border: '2px solid #e2e8f0',
-                          borderRadius: '8px',
-                          fontSize: '14px',
-                          boxSizing: 'border-box',
-                          backgroundColor: 'white'
-                        }}
-                      >
-                        <option value="voce">👨 Você</option>
-                        <option value="esposa">👩 Esposa</option>
-                        <option value="compartilhado">👨👩 Compartilhado</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Frequência */}
-                  <div style={{ marginBottom: '20px' }}>
-                    <label style={{
-                      display: 'block',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      color: '#374151',
-                      marginBottom: '6px'
-                    }}>
-                      🔄 Frequência
-                    </label>
-                    <div style={{ display: 'flex', gap: '12px' }}>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                        <input
-                          type="radio"
-                          name="frequencia"
-                          value="unica"
-                          checked={formData.frequencia === 'unica'}
-                          onChange={(e) => setFormData({...formData, frequencia: e.target.value})}
-                        />
-                        ⚡ Única
-                      </label>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                        <input
-                          type="radio"
-                          name="frequencia"
-                          value="recorrente"
-                          checked={formData.frequencia === 'recorrente'}
-                          onChange={(e) => setFormData({...formData, frequencia: e.target.value})}
-                        />
-                        🔄 Recorrente
-                      </label>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '12px' }}>
-                    <button
-                      type="submit"
-                      style={{
-                        backgroundColor: '#10b981',
-                        color: 'white',
-                        padding: '14px 28px',
-                        borderRadius: '8px',
-                        border: 'none',
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        flex: 1
-                      }}
-                    >
-                      💾 SALVAR RECEITA
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFormData({
-                        description: '',
-                        amount: '',
-                        date: new Date().toISOString().split('T')[0],
-                        category_id: '',
-                        status: 'confirmado',
-                        responsavel: 'voce',
-                        frequencia: 'unica'
-                      })}
-                      style={{
-                        backgroundColor: '#6b7280',
-                        color: 'white',
-                        padding: '14px 28px',
-                        borderRadius: '8px',
-                        border: 'none',
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      🔄 LIMPAR
-                    </button>
-                  </div>
-                </form>
-              )}
-
-              {/* Formulário Contracheque */}
-              {formMode === 'contracheque' && (
-                <div style={{
-                  textAlign: 'center',
-                  padding: '40px',
-                  backgroundColor: '#f8fafc',
-                  borderRadius: '12px',
-                  border: '2px dashed #cbd5e0'
-                }}>
-                  <div style={{ fontSize: '48px', marginBottom: '16px' }}>📄</div>
-                  <h3 style={{ fontSize: '18px', fontWeight: '600', margin: '0 0 12px 0', color: '#1a202c' }}>
-                    Upload do Contracheque
-                  </h3>
-                  <p style={{ color: '#64748b', marginBottom: '20px' }}>
-                    Tire uma foto ou faça upload do PDF do seu contracheque
-                  </p>
-                  
-                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginBottom: '20px' }}>
-                    <button
-                      onClick={() => setShowContrachequeModal(true)}
-                      style={{
-                        backgroundColor: '#3b82f6',
-                        color: 'white',
-                        padding: '12px 24px',
-                        borderRadius: '8px',
-                        border: 'none',
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      📱 Tirar Foto
-                    </button>
-                    <button
-                      onClick={() => setShowContrachequeModal(true)}
-                      style={{
-                        backgroundColor: '#10b981',
-                        color: 'white',
-                        padding: '12px 24px',
-                        borderRadius: '8px',
-                        border: 'none',
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      📄 Upload PDF
-                    </button>
-                    <button
-                      onClick={() => setShowContrachequeModal(true)}
-                      style={{
-                        backgroundColor: '#8b5cf6',
-                        color: 'white',
-                        padding: '12px 24px',
-                        borderRadius: '8px',
-                        border: 'none',
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      🔗 Conectar RH
-                    </button>
-                  </div>
-                  
-                  <p style={{ fontSize: '12px', color: '#9ca3af' }}>
-                    Nossa IA extrai automaticamente: salário bruto, descontos (INSS, IR, plano de saúde) e valor líquido
-                  </p>
-                </div>
-              )}
-
-              {/* Formulário Automática */}
-              {formMode === 'automatica' && (
-                <div style={{
-                  textAlign: 'center',
-                  padding: '40px',
-                  backgroundColor: '#f0f9ff',
-                  borderRadius: '12px',
-                  border: '2px solid #7dd3fc'
-                }}>
-                  <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔄</div>
-                  <h3 style={{ fontSize: '18px', fontWeight: '600', margin: '0 0 12px 0', color: '#0c4a6e' }}>
-                    Receita Recorrente
-                  </h3>
-                  <p style={{ color: '#0369a1', marginBottom: '20px' }}>
-                    Configure uma receita que se repete automaticamente
-                  </p>
-                  
-                  <button
-                    onClick={() => setShowRecurrenceModal(true)}
-                    style={{
-                      backgroundColor: '#0ea5e9',
-                      color: 'white',
-                      padding: '16px 32px',
-                      borderRadius: '8px',
-                      border: 'none',
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    ⚙️ CONFIGURAR RECORRÊNCIA
-                  </button>
-                  
-                  <p style={{ fontSize: '12px', color: '#64748b', marginTop: '16px' }}>
-                    Salários, aluguéis, freelances mensais, etc.
-                  </p>
-                </div>
-              )}
-            </div>
+            <NovaReceita 
+              formMode={formMode}
+              setFormMode={setFormMode}
+              formData={formData}
+              setFormData={setFormData}
+              categories={categories}
+              handleSubmit={handleSubmit}
+              setShowRecurrenceModal={setShowRecurrenceModal}
+              setShowContrachequeModal={setShowContrachequeModal}
+            />
 
             {/* Filtros + Resumo */}
             <div style={{
@@ -1554,300 +1437,22 @@ const handleCancelSeries = async () => {
               flexDirection: 'column',
               gap: '16px'
             }}>
-              {/* Filtros Inteligentes */}
-              <div style={{
-                backgroundColor: 'white',
-                borderRadius: '16px',
-                padding: '20px',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                border: '1px solid #e2e8f0'
-              }}>
-                <h3 style={{
-                  fontSize: '16px',
-                  fontWeight: 'bold',
-                  margin: '0 0 16px 0',
-                  color: '#1a202c'
-                }}>
-                  🔍 FILTROS INTELIGENTES
-                </h3>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {[
-                      { id: 'este_mes', label: '📅 Este Mês' },
-                      { id: 'fixas', label: '💰 Fixas' },
-                      { id: 'variaveis', label: '🔄 Variáveis' }
-                    ].map(filtro => (
-                      <button
-                        key={filtro.id}
-                        onClick={() => {
-                          setFiltros({...filtros, periodo: filtro.id})
-                          applyFilters(filtro.id, filtros.responsavel, filtros.busca)
-                        }}
-                        style={{
-                          padding: '8px 12px',
-                          backgroundColor: filtros.periodo === filtro.id ? '#10b981' : '#f1f5f9',
-                          color: filtros.periodo === filtro.id ? 'white' : '#64748b',
-                          border: 'none',
-                          borderRadius: '6px',
-                          fontSize: '12px',
-                          fontWeight: '500',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        {filtro.label}
-                      </button>
-                    ))}
-                  </div>
-                  
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    {[
-                      { id: 'voce', label: '👨 Seus' },
-                      { id: 'esposa', label: '👩 Esposa' }
-                    ].map(resp => (
-                      <button
-                        key={resp.id}
-                        onClick={() => setFiltros({...filtros, responsavel: resp.id})}
-                        style={{
-                          flex: 1,
-                          padding: '8px 12px',
-                          backgroundColor: filtros.responsavel === resp.id ? '#3b82f6' : '#f1f5f9',
-                          color: filtros.responsavel === resp.id ? 'white' : '#64748b',
-                          border: 'none',
-                          borderRadius: '6px',
-                          fontSize: '12px',
-                          fontWeight: '500',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        {resp.label}
-                      </button>
-                    ))}
-                  </div>
-                  
-                  <input
-                    type="text"
-                    placeholder="🔍 Buscar receita..."
-                    value={filtros.busca}
-                    onChange={(e) => {
-                      const novaBusca = e.target.value
-                      setFiltros({...filtros, busca: novaBusca})
-                      // Busca em tempo real
-                      applyFilters(filtros.periodo, filtros.responsavel, novaBusca)
-                    }}
-                    onKeyUp={(e) => {
-                      if (e.key === 'Enter') {
-                        applyFilters(filtros.periodo, filtros.responsavel, e.target.value)
-                      }
-                    }}
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '6px',
-                      fontSize: '14px',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                  {/* ✅ ADICIONAR FILTRO AVANÇADO: */}
-                  <button
-                    onClick={() => setShowFiltroAvancado(!showFiltroAvancado)}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      backgroundColor: '#f1f5f9',
-                      color: '#64748b',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '6px',
-                      fontSize: '12px',
-                      fontWeight: '500',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    ⚙️ Filtros Avançados
-                  </button>
+              <FiltrosInteligentes 
+                filtros={filtros}
+                setFiltros={setFiltros}
+                applyFilters={applyFilters}
+                applyAdvancedFilters={applyAdvancedFilters}
+                showFiltroAvancado={showFiltroAvancado}
+                setShowFiltroAvancado={setShowFiltroAvancado}
+              />
 
-                  {/* Painel de Filtros Avançados */}
-                  {showFiltroAvancado && (
-                    <div style={{
-                      backgroundColor: '#f8fafc',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '8px',
-                      padding: '12px',
-                      marginTop: '8px'
-                    }}>
-                      <div style={{ marginBottom: '12px' }}>
-                        <label style={{
-                          display: 'block',
-                          fontSize: '12px',
-                          fontWeight: '600',
-                          color: '#374151',
-                          marginBottom: '4px'
-                        }}>
-                          📅 Período Customizado:
-                        </label>
-                        <div style={{ display: 'flex', gap: '4px' }}>
-                          <input
-                            type="date"
-                            value={filtros.dataInicio || ''}
-                            onChange={(e) => setFiltros({...filtros, dataInicio: e.target.value})}
-                            style={{
-                              flex: 1,
-                              padding: '6px',
-                              border: '1px solid #e2e8f0',
-                              borderRadius: '4px',
-                              fontSize: '11px'
-                            }}
-                          />
-                          <input
-                            type="date"
-                            value={filtros.dataFim || ''}
-                            onChange={(e) => setFiltros({...filtros, dataFim: e.target.value})}
-                            style={{
-                              flex: 1,
-                              padding: '6px',
-                              border: '1px solid #e2e8f0',
-                              borderRadius: '4px',
-                              fontSize: '11px'
-                            }}
-                          />
-                        </div>
-                      </div>
-
-                      <div style={{ marginBottom: '12px' }}>
-                        <label style={{
-                          display: 'block',
-                          fontSize: '12px',
-                          fontWeight: '600',
-                          color: '#374151',
-                          marginBottom: '4px'
-                        }}>
-                          💰 Valor Mínimo:
-                        </label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={filtros.valorMinimo || ''}
-                          onChange={(e) => setFiltros({...filtros, valorMinimo: e.target.value})}
-                          placeholder="0,00"
-                          style={{
-                            width: '100%',
-                            padding: '6px',
-                            border: '1px solid #e2e8f0',
-                            borderRadius: '4px',
-                            fontSize: '11px'
-                          }}
-                        />
-                      </div>
-
-                      <button
-                        onClick={() => applyAdvancedFilters()}
-                        style={{
-                          width: '100%',
-                          padding: '8px',
-                          backgroundColor: '#3b82f6',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '4px',
-                          fontSize: '12px',
-                          fontWeight: '500',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        🔍 Aplicar Filtros
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Resumo Rápido */}
-              <div style={{
-                backgroundColor: 'white',
-                borderRadius: '16px',
-                padding: '20px',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                border: '1px solid #e2e8f0'
-              }}>
-                <h3 style={{
-                  fontSize: '16px',
-                  fontWeight: 'bold',
-                  margin: '0 0 16px 0',
-                  color: '#1a202c'
-                }}>
-                  📊 RESUMO RÁPIDO
-                </h3>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '12px',
-                    backgroundColor: '#f0fdf4',
-                    borderRadius: '8px',
-                    border: '1px solid #bbf7d0'
-                  }}>
-                    <span style={{ fontWeight: '600', color: '#166534' }}>📊 Total:</span>
-                    <span style={{ fontWeight: 'bold', color: '#166534' }}>{formatCurrency(totalMes)}</span>
-                  </div>
-                  
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '8px 12px',
-                    fontSize: '14px'
-                  }}>
-                    <span style={{ color: '#64748b' }}>👨 Você:</span>
-                    <span style={{ fontWeight: '600' }}>{formatCurrency(dadosFamiliaCalculado.voce.total)} ({dadosFamiliaCalculado.voce.percentual}%)</span>
-                  </div>
-                  
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '8px 12px',
-                    fontSize: '14px'
-                  }}>
-                    <span style={{ color: '#64748b' }}>👩 Esposa:</span>
-                    <span style={{ fontWeight: '600' }}>{formatCurrency(dadosFamiliaCalculado.esposa.total)} ({dadosFamiliaCalculado.esposa.percentual}%)</span>
-                  </div>
-                  
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '12px',
-                    backgroundColor: '#fef3c7',
-                    borderRadius: '8px',
-                    border: '1px solid #fcd34d'
-                  }}>
-                    <span style={{ fontWeight: '600', color: '#92400e' }}>🎯 Faltam:</span>
-                    <span style={{ fontWeight: 'bold', color: '#92400e' }}>{formatCurrency(metaMensal - totalMes)}</span>
-                  </div>
-                  {/* ✅ ADICIONAR BOTÃO DE DEBUG: */}
-                  {(dadosFamiliaCalculado.voce.total === 0 && dadosFamiliaCalculado.esposa.total === 0 && totalMes > 0) && (
-                    <button
-                      onClick={corrigirResponsavelReceitas}
-                      style={{
-                        width: '100%',
-                        padding: '8px 12px',
-                        backgroundColor: '#f59e0b',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '6px',
-                        fontSize: '12px',
-                        fontWeight: '500',
-                        cursor: 'pointer',
-                        marginTop: '8px'
-                      }}
-                    >
-                      🔧 Corrigir Responsáveis
-                    </button>
-                  )}
-                </div>
-              </div>
+              <ResumoRapido 
+                totalMes={totalMes}
+                dadosFamiliaCalculado={dadosFamiliaCalculado}
+                metaMensal={metaMensal}
+                formatCurrency={formatCurrency}
+                corrigirresponsibleReceitas={corrigirresponsibleReceitas}
+              />
               {/* Metas de Receitas */}
               <div style={{
                 backgroundColor: 'white',
@@ -2009,7 +1614,7 @@ const handleCancelSeries = async () => {
                           {formatCurrency(recebimento.valor)}
                         </div>
                         <div style={{ fontSize: '12px' }}>
-                          {getResponsavelIcon(recebimento.responsavel)}
+                          {getResponsavelIcon(recebimento.responsible)}
                         </div>
                       </div>
                     </div>
@@ -2031,584 +1636,35 @@ const handleCancelSeries = async () => {
             </div>
           </div>
 
-          {/* Receitas Cadastradas */}
-          <div style={{
-            backgroundColor: 'white',
-            borderRadius: '16px',
-            padding: '24px',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-            border: '1px solid #e2e8f0',
-            marginBottom: '24px'
-          }}>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '20px'
-            }}>
-              <h2 style={{
-                fontSize: '20px',
-                fontWeight: 'bold',
-                margin: 0,
-                color: '#1a202c'
-              }}>
-                📋 RECEITAS CADASTRADAS
-              </h2>
-              
-              <div style={{ display: 'flex', gap: '8px' }}>
-                {[
-                  { id: 'tabela', label: '📊 Tabela', icon: '📊' },
-                  { id: 'grafico', label: '📈 Gráfico', icon: '📈' },
-                  { id: 'calendario', label: '📅 Calendário', icon: '📅' }
-                ].map(view => (
-                  <button
-                    key={view.id}
-                    onClick={() => setViewMode(view.id)}
-                    style={{
-                      padding: '8px 16px',
-                      backgroundColor: viewMode === view.id ? '#10b981' : '#f1f5f9',
-                      color: viewMode === view.id ? 'white' : '#64748b',
-                      border: 'none',
-                      borderRadius: '6px',
-                      fontSize: '12px',
-                      fontWeight: '500',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {view.icon} {view.label}
-                  </button>
-                ))}
-                <button
-                  onClick={handleExport}
-                  style={{
-                    padding: '8px 16px',
-                    backgroundColor: '#3b82f6',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '6px',
-                    fontSize: '12px',
-                    fontWeight: '500',
-                    cursor: 'pointer'
-                  }}
-                >
-                  📤 Exportar
-                </button>
-              </div>
-            </div>
+          <ListaReceitas 
+            receitas={receitas}
+            receitasFiltradas={receitasFiltradas}
+            viewMode={viewMode}
+            setViewMode={setViewMode}
+            editingId={editingId}
+            setEditingId={setEditingId}
+            editData={editData}
+            setEditData={setEditData}
+            handleSaveEdit={handleSaveEdit}
+            handleOpenSeriesModal={handleOpenSeriesModal}
+            handleExport={handleExport}
+            formatCurrency={formatCurrency}
+            formatDate={formatDate}
+            getStatusIcon={getStatusIcon}
+            getResponsavelIcon={getResponsavelIcon}
+            evolucaoCalculada={evolucaoCalculada}
+            insights={insights}
+            categoriasPieCalculadas={categoriasPieCalculadas}
+            totalMes={totalMes}
+          />
 
-            {/* Visualização Tabela */}
-            {viewMode === 'tabela' && (
-              <div>
-                {receitas.length > 0 ? (
-                  <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                      <thead>
-                        <tr style={{ backgroundColor: '#f8fafc' }}>
-                          <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#374151' }}>Status</th>
-                          <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#374151' }}>Descrição</th>
-                          <th style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: '#374151' }}>Valor</th>
-                          <th style={{ padding: '12px', textAlign: 'center', fontWeight: '600', color: '#374151' }}>Data</th>
-                          <th style={{ padding: '12px', textAlign: 'center', fontWeight: '600', color: '#374151' }}>Responsável</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(receitasFiltradas.length > 0 ? receitasFiltradas : receitas).map((receita, index) => (
-                          <tr key={receita.id} style={{
-                            borderBottom: '1px solid #f1f5f9',
-                            transition: 'background-color 0.2s ease'
-                          }}
-                          onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
-                          onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                          >
-                            <td style={{ padding: '12px' }}>
-                              <span style={{ fontSize: '16px' }}>
-                                {getStatusIcon(receita.status)}
-                              </span>
-                            </td>
-                            <td style={{ padding: '12px', fontWeight: '500' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                {receita.recurring_id && (
-                                  <span style={{
-                                    backgroundColor: '#e0f2fe',
-                                    color: '#0369a1',
-                                    padding: '2px 6px',
-                                    borderRadius: '4px',
-                                    fontSize: '10px',
-                                    fontWeight: '600'
-                                  }}>
-                                    🔄 SÉRIE
-                                  </span>
-                                )}
-                                
-                                                                {/* EDIÇÃO IN-LINE MELHORADA */}
-                                                                {editingId === receita.id ? (
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <input
-                                      type="text"
-                                      value={editData.description || receita.description}
-                                      onChange={(e) => setEditData({...editData, description: e.target.value})}
-                                      onKeyPress={(e) => {
-                                        if (e.key === 'Enter') handleSaveEdit(receita.id)
-                                        if (e.key === 'Escape') {
-                                          setEditingId(null)
-                                          setEditData({})
-                                        }
-                                      }}
-                                      autoFocus
-                                      style={{
-                                        border: '2px solid #10b981',
-                                        borderRadius: '6px',
-                                        padding: '6px 10px',
-                                        fontSize: '14px',
-                                        width: '200px',
-                                        outline: 'none'
-                                      }}
-                                    />
-                                    <button
-                                      onClick={() => handleSaveEdit(receita.id)}
-                                      style={{
-                                        backgroundColor: '#10b981',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: '4px',
-                                        padding: '4px 8px',
-                                        fontSize: '12px',
-                                        cursor: 'pointer'
-                                      }}
-                                      title="Salvar (Enter)"
-                                    >
-                                      ✓
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        setEditingId(null)
-                                        setEditData({})
-                                      }}
-                                      style={{
-                                        backgroundColor: '#ef4444',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: '4px',
-                                        padding: '4px 8px',
-                                        fontSize: '12px',
-                                        cursor: 'pointer'
-                                      }}
-                                      title="Cancelar (Esc)"
-                                    >
-                                      ✕
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <span 
-                                    onClick={() => {
-                                      setEditingId(receita.id)
-                                      setEditData(receita)
-                                    }}
-                                    style={{ 
-                                      cursor: 'pointer',
-                                      padding: '4px 8px',
-                                      borderRadius: '4px',
-                                      transition: 'background-color 0.2s ease'
-                                    }}
-                                    onMouseOver={(e) => e.target.style.backgroundColor = '#f0f9ff'}
-                                    onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
-                                    title="Clique para editar"
-                                  >
-                                    {receita.description}
-                                  </span>
-                                )}
-                                {receita.recurring_id && (
-                                  <button
-                                    onClick={() => handleOpenSeriesModal(receita.recurring_id)}
-                                    style={{
-                                      backgroundColor: 'transparent',
-                                      border: 'none',
-                                      cursor: 'pointer',
-                                      fontSize: '12px',
-                                      color: '#3b82f6',
-                                      padding: '2px 4px'
-                                    }}
-                                    title="Gerenciar série"
-                                  >
-                                    ⚙️
-                                  </button>
-                                )}
-                              </div>
-                            </td>
-                            <td style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: '#10b981' }}>
-                              {formatCurrency(receita.amount)}
-                            </td>
-                            <td style={{ padding: '12px', textAlign: 'center', fontSize: '14px', color: '#64748b' }}>
-                              {formatDate(receita.date)}
-                            </td>
-                            <td style={{ padding: '12px', textAlign: 'center', fontSize: '16px' }}>
-                              {getResponsavelIcon(receita.responsavel || 'voce')}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div style={{
-                    textAlign: 'center',
-                    padding: '60px',
-                    color: '#64748b'
-                  }}>
-                    <div style={{ fontSize: '64px', marginBottom: '16px', opacity: 0.5 }}>💰</div>
-                    <h3 style={{ fontSize: '18px', fontWeight: '600', margin: '0 0 8px 0' }}>
-                      Nenhuma receita cadastrada
-                    </h3>
-                    <p style={{ margin: 0 }}>
-                      Comece adicionando suas fontes de renda acima
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-
-                        {/* Visualização Gráfico */}
-                        {viewMode === 'grafico' && (
-              <div style={{ height: '400px' }}>
-                {evolucaoCalculada.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={evolucaoCalculada}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="mes" />
-                      <YAxis />
-                      <Line 
-                        type="monotone" 
-                        dataKey="valor" 
-                        stroke="#10b981" 
-                        strokeWidth={3}
-                        dot={{ fill: '#10b981', strokeWidth: 2, r: 6 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    height: '100%',
-                    color: '#64748b',
-                    fontSize: '16px',
-                    textAlign: 'center'
-                  }}>
-                    <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.5 }}>
-                      📊
-                    </div>
-                    <div style={{ fontWeight: '600', marginBottom: '8px' }}>
-                      Carregando dados de evolução...
-                    </div>
-                    <div style={{ fontSize: '12px', opacity: 0.7 }}>
-                      Dados disponíveis: {evolucaoCalculada.length} meses
-                    </div>
-                    {receitas.length === 0 && (
-                      <div style={{ 
-                        fontSize: '12px', 
-                        marginTop: '12px',
-                        padding: '8px 16px',
-                        backgroundColor: '#fef3c7',
-                        borderRadius: '6px',
-                        color: '#92400e'
-                      }}>
-                        💡 Adicione algumas receitas para ver a evolução
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Visualização Calendário FUNCIONAL */}
-            {viewMode === 'calendario' && (
-              <div style={{ padding: '20px 0' }}>
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(7, 1fr)',
-                  gap: '1px',
-                  backgroundColor: '#e2e8f0',
-                  borderRadius: '8px',
-                  overflow: 'hidden',
-                  marginBottom: '20px'
-                }}>
-                  {/* Cabeçalho dos dias da semana */}
-                  {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(dia => (
-                    <div key={dia} style={{
-                      backgroundColor: '#1a202c',
-                      color: 'white',
-                      padding: '12px',
-                      textAlign: 'center',
-                      fontSize: '12px',
-                      fontWeight: '600'
-                    }}>
-                      {dia}
-                    </div>
-                  ))}
-                  
-                  {/* Dias do mês */}
-                  {(() => {
-                    const hoje = new Date()
-                    const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1)
-                    const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0)
-                    const diasDoMes = []
-                    
-                    // Dias vazios do início
-                    for (let i = 0; i < primeiroDia.getDay(); i++) {
-                      diasDoMes.push(
-                        <div key={`empty-${i}`} style={{
-                          backgroundColor: '#f8fafc',
-                          minHeight: '80px'
-                        }} />
-                      )
-                    }
-                    
-                    // Dias do mês
-                    for (let dia = 1; dia <= ultimoDia.getDate(); dia++) {
-                      const dataAtual = new Date(hoje.getFullYear(), hoje.getMonth(), dia).toISOString().split('T')[0]
-                      const receitasParaUsar = receitasFiltradas.length > 0 ? receitasFiltradas : receitas
-                      const receitasDoDia = receitasParaUsar.filter(r => r.date === dataAtual)
-                      const totalDoDia = receitasDoDia.reduce((sum, r) => sum + r.amount, 0)
-                      
-                      diasDoMes.push(
-                        <div key={dia} style={{
-                          backgroundColor: 'white',
-                          minHeight: '80px',
-                          padding: '8px',
-                          position: 'relative',
-                          cursor: 'pointer',
-                          border: dia === hoje.getDate() ? '2px solid #10b981' : 'none'
-                        }}>
-                          <div style={{
-                            fontSize: '14px',
-                            fontWeight: '600',
-                            color: '#1a202c',
-                            marginBottom: '4px'
-                          }}>
-                            {dia}
-                          </div>
-                          {receitasDoDia.length > 0 && (
-                            <>
-                              <div style={{
-                                fontSize: '10px',
-                                color: '#10b981',
-                                fontWeight: '600'
-                              }}>
-                                {formatCurrency(totalDoDia)}
-                              </div>
-                              <div style={{
-                                fontSize: '8px',
-                                color: '#64748b'
-                              }}>
-                                {receitasDoDia.length} receita{receitasDoDia.length > 1 ? 's' : ''}
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      )
-                    }
-                    
-                    return diasDoMes
-                  })()}
-                </div>
-                
-                {/* Legenda */}
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  gap: '20px',
-                  fontSize: '12px',
-                  color: '#64748b'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <div style={{
-                      width: '12px',
-                      height: '12px',
-                      backgroundColor: '#10b981',
-                      borderRadius: '2px'
-                    }} />
-                    Dia com receitas
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <div style={{
-                      width: '12px',
-                      height: '12px',
-                      border: '2px solid #10b981',
-                      borderRadius: '2px'
-                    }} />
-                    Hoje
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Insights */}
-            <div style={{
-              marginTop: '20px',
-              padding: '16px',
-              backgroundColor: '#f0f9ff',
-              borderRadius: '8px',
-              border: '1px solid #7dd3fc'
-            }}>
-              {insights.map((insight, index) => (
-                <p key={index} style={{
-                  margin: index === 0 ? '0 0 8px 0' : 0,
-                  fontSize: '14px',
-                  color: '#0369a1',
-                  fontWeight: '500'
-                }}>
-                  {insight}
-                </p>
-              ))}
-            </div>
-          </div>
-
-          {/* Análise Inteligente */}
-          <div style={{
-            backgroundColor: 'white',
-            borderRadius: '16px',
-            padding: '24px',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-            border: '1px solid #e2e8f0'
-          }}>
-            <h2 style={{
-              fontSize: '20px',
-              fontWeight: 'bold',
-              margin: '0 0 24px 0',
-              color: '#1a202c'
-            }}>
-              🧠 ANÁLISE INTELIGENTE
-            </h2>
-
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr 1fr',
-              gap: '24px'
-            }}>
-              {/* Evolução */}
-              <div>
-                <h3 style={{
-                  fontSize: '16px',
-                  fontWeight: '600',
-                  margin: '0 0 16px 0',
-                  color: '#374151'
-                }}>
-                  📈 EVOLUÇÃO (6 meses)
-                </h3>
-                <div style={{ height: '120px' }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={evolucaoCalculada}>
-                      <Line 
-                        type="monotone" 
-                        dataKey="valor" 
-                        stroke="#10b981" 
-                        strokeWidth={2}
-                        dot={false}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Por Categoria */}
-              <div>
-                <h3 style={{
-                  fontSize: '16px',
-                  fontWeight: '600',
-                  margin: '0 0 16px 0',
-                  color: '#374151'
-                }}>
-                  📊 POR CATEGORIA
-                </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {categoriasPieCalculadas.map((cat, index) => (
-                    <div key={index} style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      fontSize: '14px'
-                    }}>
-                      <span style={{ color: '#64748b' }}>💼 {cat.name}:</span>
-                      <span style={{ fontWeight: '600', color: cat.color }}>{cat.value}%</span>
-                    </div>
-                  ))}
-                  <div style={{
-                    marginTop: '8px',
-                    paddingTop: '8px',
-                    borderTop: '1px solid #e2e8f0',
-                    fontSize: '14px',
-                    fontWeight: '600'
-                  }}>
-                    Total: {formatCurrency(totalMes)}
-                  </div>
-                </div>
-              </div>
-
-              {/* Projeção */}
-              <div>
-                <h3 style={{
-                  fontSize: '16px',
-                  fontWeight: '600',
-                  margin: '0 0 16px 0',
-                  color: '#374151'
-                }}>
-                  🔮 PROJEÇÃO INTELIGENTE
-                </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '14px' }}>
-                  {(() => {
-                    const hoje = new Date()
-                    const mesesNomes = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
-                    const projecoes = []
-                    
-                    // Calcular próximos 4 meses
-                    for (let i = 1; i <= 4; i++) {
-                      const dataProjecao = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1)
-                      const mesNome = mesesNomes[dataProjecao.getMonth()]
-                      
-                      // Calcular receitas recorrentes
-                      const receitasRecorrentes = recurringSeries
-                        .filter(s => s.is_active)
-                        .reduce((sum, s) => sum + s.amount, 0)
-                      
-                      // Previsão baseada em histórico
-                      let previsaoExtra = 0
-                      let status = 'Normal'
-                      let cor = '#64748b'
-                      
-                      // Dezembro = 13º salário
-                      if (dataProjecao.getMonth() === 11) {
-                        previsaoExtra = totalMes * 0.8 // Aproximação do 13º
-                        status = '+13º Salário'
-                        cor = '#f59e0b'
-                      }
-                      // Meses com histórico de receitas extras
-                      else if (dataProjecao.getMonth() === 8 || dataProjecao.getMonth() === 9) { // Set/Out
-                        previsaoExtra = Math.round(Math.random() * 500) + 200 // Baseado em padrão histórico
-                        status = `+${formatCurrency(previsaoExtra)}`
-                        cor = '#10b981'
-                      }
-                      
-                      projecoes.push({
-                        mes: mesNome,
-                        status,
-                        cor,
-                        valor: receitasRecorrentes + previsaoExtra
-                      })
-                    }
-                    
-                    return projecoes.map((proj, index) => (
-                      <div key={index} style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: '#64748b' }}>{proj.mes}:</span>
-                        <span style={{ fontWeight: '600', color: proj.cor }}>{proj.status}</span>
-                      </div>
-                    ))
-                  })()}
-                </div>
-              </div>
-            </div>
-          </div>
+          <AnaliseInteligente 
+            evolucaoCalculada={evolucaoCalculada}
+            categoriasPieCalculadas={categoriasPieCalculadas} 
+            totalMes={totalMes}
+            recurringSeries={recurringSeries}
+            formatCurrency={formatCurrency}
+          />
         </div>
       </main>
 
