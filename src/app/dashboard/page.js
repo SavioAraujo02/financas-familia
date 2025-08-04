@@ -3,6 +3,19 @@ import { useState, useEffect } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell, ReferenceLine } from 'recharts'
 import Sidebar from '@/components/layout/Sidebar'
 
+// Novos componentes padronizados
+import { CardsFinanceiros } from '@/components/dashboard/CardsFinanceiros'
+import { ResumoInteligente } from '@/components/dashboard/ResumoInteligente'
+import { FinBotAssistente } from '@/components/dashboard/FinBotAssistente'
+import { ProximosEventos } from '@/components/dashboard/ProximosEventos'
+import { DesafioSemanal } from '@/components/dashboard/DesafioSemanal'
+import { FluxoCaixa } from '@/components/dashboard/FluxoCaixa'
+import { AcoesRapidas } from '@/components/dashboard/AcoesRapidas'
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+
+// Utilitários padronizados
+import { formatCurrency, HEADER_GRADIENTS } from '@/lib/utils'
+
 export default function DashboardRevolucionario() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [user, setUser] = useState(null)
@@ -85,13 +98,13 @@ useEffect(() => {
       currentStep++
       const progress = currentStep / steps
 
-      setAnimatedValues({
-        receita: Math.round(cardsData.receita.valor * progress),
-        despesas: Math.round(cardsData.despesas.valor * progress),
-        faturas: Math.round(cardsData.faturas.valor * progress),
-        saldo: Math.round(cardsData.saldo.valor * progress),
-        economia: Math.round(dadosFamilia.economiaMedia * progress * 100) / 100  // ✅ CORRIGIDO
-      })
+    setAnimatedValues({
+      receita: Math.round(cardsData.receita.valor * progress * 100) / 100, // ✅ Preserva centavos
+      despesas: Math.round(cardsData.despesas.valor * progress * 100) / 100, // ✅ Preserva centavos
+      faturas: Math.round(cardsData.faturas.valor * progress * 100) / 100, // ✅ Preserva centavos
+      saldo: Math.round(cardsData.saldo.valor * progress * 100) / 100, // ✅ Preserva centavos
+      economia: Math.round(dadosFamilia.economiaMedia * progress * 100) / 100
+    })
 
       if (currentStep >= steps) {
         clearInterval(interval)
@@ -296,9 +309,14 @@ const loadUserData = async () => {
     // 6. CARREGAR CARTÕES REAIS
     const { data: cartoesData } = await cards.getAll(currentUser.id)
     
-    // 7. CALCULAR FATURAS REAIS
+    // ✅ CALCULAR FATURAS REAIS - VERSÃO CORRIGIDA
     let totalFaturas = 0
     const cartoesComUso = []
+    
+    console.log('🔍 DEBUG CARTÕES:', {
+      cartoesData: cartoesData?.length || 0,
+      cartoes: cartoesData?.map(c => ({ nome: c.name, limite: c.credit_limit })) || []
+    })
     
     if (cartoesData && cartoesData.length > 0) {
       cartoesData.forEach(cartao => {
@@ -309,18 +327,39 @@ const loadUserData = async () => {
           t.status === 'confirmado'
         )
         
+        console.log(`🔍 DEBUG Cartão ${cartao.name}:`, {
+          transacoes: transacoesCartao.length,
+          transacoesDetalhes: transacoesCartao.map(t => ({
+            descricao: t.description,
+            valor: t.amount,
+            parcelas: t.installments,
+            parcelaAtual: t.installment_number
+          }))
+        })
+        
         let usedAmount = 0
         transacoesCartao.forEach(t => {
           if (t.installments && t.installments > 1) {
-            // Para parceladas, considerar parcelas restantes
-            const parcelasRestantes = t.installments - ((t.installment_number || 1) - 1)
-            usedAmount += ((t.amount / t.installments) * parcelasRestantes)
+            // Para parceladas, considerar valor da parcela atual
+            const valorParcela = t.amount / t.installments
+            usedAmount += valorParcela
           } else {
             usedAmount += t.amount
           }
         })
         
-        totalFaturas += usedAmount
+        // ✅ SOMAR TAMBÉM O used_amount do banco se existir
+        const usedAmountBanco = cartao.used_amount || 0
+        const usedAmountTotal = usedAmount + usedAmountBanco
+        
+        totalFaturas += usedAmountTotal
+        
+        console.log(`✅ Cartão ${cartao.name} calculado:`, {
+          usedAmountTransacoes: usedAmount,
+          usedAmountBanco: usedAmountBanco,
+          usedAmountTotal: usedAmountTotal,
+          limite: cartao.credit_limit
+        })
         
         const usagePercentage = cartao.credit_limit > 0 ? 
           Math.round((usedAmount / cartao.credit_limit) * 100) : 0
@@ -356,14 +395,76 @@ const loadUserData = async () => {
       }))
     }
     const saldoAtual = totalReceitas - totalDespesas
-    const percentualComprometido = Math.round((totalFaturas / rendaFamiliar) * 100)
-    const percentualLivre = 100 - percentualComprometido
+
+    // ✅ DEBUG COMPLETO DOS CÁLCULOS
+    console.log('🔍 DEBUG CÁLCULOS PRINCIPAIS:', {
+      totalReceitas,
+      totalDespesas,
+      totalFaturas,
+      rendaFamiliar,
+      cartoesData: cartoesData?.length || 0,
+      transacoesCartao: (todasTransacoes || []).filter(t => t.card_id && t.type === 'despesa').length
+    })
     
-    // Calcular saúde financeira baseada em critérios reais
-    let saudeFinanceira = 100
-    if (percentualComprometido > 70) saudeFinanceira = 25
-    else if (percentualComprometido > 50) saudeFinanceira = 50
-    else if (percentualComprometido > 30) saudeFinanceira = 75
+    // ✅ CALCULAR COMPROMETIMENTO REAL (baseado em despesas, não faturas)
+    const percentualComprometidoDespesas = rendaFamiliar > 0 ? 
+    Math.round((totalDespesas / rendaFamiliar) * 100) : 0
+  
+  const percentualComprometidoFaturas = rendaFamiliar > 0 ? 
+    Math.round((totalFaturas / rendaFamiliar) * 100) : 0
+  
+  // Usar o maior dos dois para ser mais conservador
+  const percentualComprometido = Math.max(percentualComprometidoDespesas, percentualComprometidoFaturas)
+  const percentualLivre = Math.max(0, 100 - percentualComprometido)
+  
+  console.log('🔍 DEBUG Comprometimento CORRIGIDO:', {
+    totalDespesas,
+    totalFaturas,
+    rendaFamiliar,
+    percentualComprometidoDespesas,
+    percentualComprometidoFaturas,
+    percentualComprometido,
+    percentualLivre
+  })
+  
+  // ✅ CALCULAR SAÚDE FINANCEIRA REAL
+  let saudeFinanceira = 100
+  const saldoMensal = totalReceitas - totalDespesas
+  
+  // Penalizar alto comprometimento de renda (baseado em despesas)
+  if (percentualComprometidoDespesas > 80) saudeFinanceira -= 50
+  else if (percentualComprometidoDespesas > 60) saudeFinanceira -= 35
+  else if (percentualComprometidoDespesas > 40) saudeFinanceira -= 20
+  else if (percentualComprometidoDespesas > 20) saudeFinanceira -= 10
+  
+  // Penalizar se gasta mais que ganha
+  if (saldoMensal < 0) saudeFinanceira -= 30
+  else if (saldoMensal < (rendaFamiliar * 0.1)) saudeFinanceira -= 15
+  
+  // Penalizar se tem muitas faturas pendentes
+  if (percentualComprometidoFaturas > 50) saudeFinanceira -= 15
+  else if (percentualComprometidoFaturas > 30) saudeFinanceira -= 10
+  
+  // Bonificar boa economia
+  const percentualEconomia = rendaFamiliar > 0 ? (saldoMensal / rendaFamiliar) * 100 : 0
+  if (percentualEconomia > 30) saudeFinanceira += 10
+  else if (percentualEconomia > 20) saudeFinanceira += 5
+  
+  // Garantir que fica entre 0 e 100
+  saudeFinanceira = Math.max(0, Math.min(100, Math.round(saudeFinanceira)))
+  
+  console.log('✅ Saúde Financeira CORRIGIDA:', {
+    percentualComprometidoDespesas,
+    percentualComprometidoFaturas,
+    saldoMensal,
+    percentualEconomia,
+    saudeFinanceira,
+    penalizacoes: {
+      comprometimentoDespesas: percentualComprometidoDespesas > 20,
+      saldoNegativo: saldoMensal < 0,
+      faturasPendentes: percentualComprometidoFaturas > 30
+    }
+  })
     
     // Calcular nível baseado em múltiplos fatores
 const fatores = {
@@ -500,10 +601,18 @@ else if (nivel >= 3) tituloNivel = "APRENDENDO"
       })
     }
     
-    // 12. GERAR DESAFIO SEMANAL BASEADO EM DADOS REAIS
-    const inicioSemana = new Date(hoje.setDate(hoje.getDate() - hoje.getDay()))
+    // ✅ GERAR DESAFIO SEMANAL REAL
+    const hojeOriginal = new Date() // Não modificar a data original
+    const inicioSemana = new Date(hojeOriginal)
+    inicioSemana.setDate(hojeOriginal.getDate() - hojeOriginal.getDay())
     const fimSemana = new Date(inicioSemana)
     fimSemana.setDate(inicioSemana.getDate() + 6)
+
+    console.log('🔍 DEBUG Desafio Semanal:', {
+      hojeOriginal: hojeOriginal.toLocaleDateString('pt-BR'),
+      inicioSemana: inicioSemana.toLocaleDateString('pt-BR'),
+      fimSemana: fimSemana.toLocaleDateString('pt-BR')
+    })
 
     // Buscar gastos da semana atual
     const gastosDestaeSemana = (todasTransacoes || []).filter(t => {
@@ -582,9 +691,20 @@ else if (nivel >= 3) tituloNivel = "APRENDENDO"
       saudeFinanceira,
       rendaComprometida: percentualComprometido,
       rendaLivre: percentualLivre,
-      economiaMedia: Math.max(0, saldoAtual / new Date().getDate()),
-      diasAtivos: await calcularDiasAtivos(currentUser.id, todasTransacoes)
-    })
+      economiaMedia: (() => {
+        // ✅ ECONOMIA = SALDO ATUAL (mais simples e correto)
+        const saldoAtual = totalReceitas - totalDespesas
+        
+        console.log('🔍 DEBUG Economia (Saldo):', {
+          totalReceitas,
+          totalDespesas,
+          saldoAtual
+        })
+        
+        return saldoAtual
+      })(),
+    diasAtivos: await calcularDiasAtivos(currentUser.id, todasTransacoes)
+  })
 
     setCardsData({
       receita: { 
@@ -618,15 +738,54 @@ else if (nivel >= 3) tituloNivel = "APRENDENDO"
     setFluxoCaixaData(fluxoReal)
     setFinBotDica(dicaInteligente)
     
+    // ✅ PROGRESSO INDIVIDUAL REAL
+    const progressoVoce = Array(7).fill(false).map((_, i) => {
+      const diaAtual = new Date(inicioSemana)
+      diaAtual.setDate(inicioSemana.getDate() + i)
+      
+      // Verificar se teve delivery neste dia para "você"
+      const temDeliveryNoDia = gastosDelivery.some(g => 
+        new Date(g.date).toDateString() === diaAtual.toDateString() && 
+        (g.responsible === 'voce' || !g.responsible)
+      )
+      
+      // Só conta como sucesso se o dia já passou e não teve delivery
+      return diaAtual <= hojeOriginal && !temDeliveryNoDia
+    })
+    
+    const progressoEsposa = Array(7).fill(false).map((_, i) => {
+      const diaAtual = new Date(inicioSemana)
+      diaAtual.setDate(inicioSemana.getDate() + i)
+      
+      // Verificar se teve delivery neste dia para "esposa"
+      const temDeliveryNoDia = gastosDelivery.some(g => 
+        new Date(g.date).toDateString() === diaAtual.toDateString() && 
+        g.responsible === 'esposa'
+      )
+      
+      // Só conta como sucesso se o dia já passou e não teve delivery
+      return diaAtual <= hojeOriginal && !temDeliveryNoDia
+    })
+
+    console.log('✅ Desafio Calculado:', {
+      gastosDelivery: gastosDelivery.length,
+      valorGastoDelivery,
+      diasComDelivery,
+      diasSemDelivery,
+      progresso,
+      progressoVoce,
+      progressoEsposa
+    })
+
     setDesafioSemanal({
       titulo: "🍕 SEMANA SEM DELIVERY",
-      meta: `Economia potencial: ${formatCurrency(economiaDesafio)}`,
+      meta: `Economia potencial: ${formatCurrency(metaEconomia)}`,
       progresso: progresso,
-      diasCompletos: diasCompletos,
+      diasCompletos: diasSemDelivery,
       totalDias: diasSemana,
-      progressoVoce: Array(diasSemana).fill(false).map((_, i) => i < diasCompletos - 1),
-      progressoEsposa: Array(diasSemana).fill(false).map((_, i) => i < diasCompletos),
-      premio: `🏆 Prêmio: ${formatCurrency(economiaDesafio / 2)} cada um para gastos livres!`
+      progressoVoce: progressoVoce,
+      progressoEsposa: progressoEsposa,
+      premio: `🏆 Prêmio: ${formatCurrency(metaEconomia / 2)} cada um para gastos livres!`
     })
 
     setPrevisao12Meses(previsaoReal || [])
@@ -640,13 +799,6 @@ else if (nivel >= 3) tituloNivel = "APRENDENDO"
     setLoading(false)
   }
 }
-
-  const formatCurrency = (value) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value)
-  }
 
   const calcularConquistasReais = async (userId, dados) => {
     const conquistas = []
@@ -710,151 +862,11 @@ else if (nivel >= 3) tituloNivel = "APRENDENDO"
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f8fafc', fontFamily: 'Inter, sans-serif' }}>
-        {/* Sidebar Skeleton */}
-        <div style={{
-          width: '300px',
-          backgroundColor: '#1a202c',
-          position: 'fixed',
-          height: '100vh',
-          padding: '24px'
-        }}>
-          <div style={{
-            height: '40px',
-            backgroundColor: 'rgba(255,255,255,0.1)',
-            borderRadius: '8px',
-            marginBottom: '32px',
-            animation: 'shimmer 1.5s infinite'
-          }} />
-          
-          {Array(8).fill(0).map((_, i) => (
-            <div key={i} style={{
-              height: '44px',
-              backgroundColor: 'rgba(255,255,255,0.1)',
-              borderRadius: '8px',
-              marginBottom: '8px',
-              animation: `shimmer 1.5s infinite ${i * 0.1}s`
-            }} />
-          ))}
-        </div>
-
-        {/* Main Content Skeleton */}
-        <main style={{ flex: 1, marginLeft: '300px' }}>
-          {/* Header Skeleton */}
-          <div style={{
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            padding: '20px 32px',
-            height: '140px'
-          }}>
-            <div style={{
-              height: '32px',
-              backgroundColor: 'rgba(255,255,255,0.2)',
-              borderRadius: '8px',
-              marginBottom: '16px',
-              animation: 'shimmer 1.5s infinite'
-            }} />
-            <div style={{
-              height: '60px',
-              backgroundColor: 'rgba(255,255,255,0.15)',
-              borderRadius: '12px',
-              animation: 'shimmer 1.5s infinite 0.2s'
-            }} />
-          </div>
-
-          {/* Content Skeleton */}
-          <div style={{ padding: '32px' }}>
-            {/* Resumo Skeleton */}
-            <div style={{
-              height: '120px',
-              backgroundColor: 'white',
-              borderRadius: '16px',
-              marginBottom: '24px',
-              animation: 'shimmer 1.5s infinite 0.3s'
-            }} />
-
-            {/* Cards Grid Skeleton */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: '2fr 1fr',
-              gap: '24px',
-              marginBottom: '24px'
-            }}>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: '16px'
-              }}>
-                {Array(4).fill(0).map((_, i) => (
-                  <div key={i} style={{
-                    height: '140px',
-                    backgroundColor: 'white',
-                    borderRadius: '16px',
-                    animation: `shimmer 1.5s infinite ${0.4 + i * 0.1}s`
-                  }} />
-                ))}
-              </div>
-              
-              <div style={{
-                height: '300px',
-                backgroundColor: 'white',
-                borderRadius: '16px',
-                animation: 'shimmer 1.5s infinite 0.8s'
-              }} />
-            </div>
-
-            {/* Bottom Grid Skeleton */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: '24px'
-            }}>
-              {Array(4).fill(0).map((_, i) => (
-                <div key={i} style={{
-                  height: '250px',
-                  backgroundColor: 'white',
-                  borderRadius: '16px',
-                  animation: `shimmer 1.5s infinite ${0.9 + i * 0.1}s`
-                }} />
-              ))}
-            </div>
-          </div>
-        </main>
-
-        {/* Loading Text */}
-        <div style={{
-          position: 'fixed',
-          bottom: '40px',
-          right: '40px',
-          backgroundColor: 'rgba(139, 92, 246, 0.9)',
-          color: 'white',
-          padding: '16px 24px',
-          borderRadius: '12px',
-          fontSize: '14px',
-          fontWeight: '600',
-          animation: 'pulse 2s infinite'
-        }}>
-          🚀 Carregando dashboard revolucionário...
-        </div>
-
-        {/* Skeleton CSS */}
-        <style jsx>{`
-          @keyframes shimmer {
-            0% {
-              background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-              background-size: 200px 100%;
-              background-position: -200px 0;
-            }
-            100% {
-              background-position: 200px 0;
-            }
-          }
-          
-          @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.8; transform: scale(1.02); }
-          }
-        `}</style>
-      </div>
+      <LoadingSpinner 
+        message="Carregando dashboard revolucionário..."
+        gradient={HEADER_GRADIENTS.dashboard}
+        emoji="🚀"
+      />
     )
   }
 
@@ -873,9 +885,8 @@ else if (nivel >= 3) tituloNivel = "APRENDENDO"
         marginLeft: sidebarOpen ? '300px' : '80px',
         transition: 'margin-left 0.3s ease'
       }}>
-        {/* Header Familiar */}
         <header style={{
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          background: HEADER_GRADIENTS.dashboard,
           color: 'white',
           padding: '20px 32px',
           boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
@@ -937,168 +948,23 @@ else if (nivel >= 3) tituloNivel = "APRENDENDO"
             </div>
           </div>
           
-                    {/* FinBot Inteligente */}
-                    <div style={{
-            backgroundColor: 'rgba(255,255,255,0.15)',
-            borderRadius: '12px',
-            padding: '16px',
-            backdropFilter: 'blur(10px)',
-            border: '1px solid rgba(255,255,255,0.2)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-              <div style={{
-                backgroundColor: 'rgba(255,255,255,0.2)',
-                borderRadius: '50%',
-                padding: '8px',
-                fontSize: '20px',
-                animation: 'pulse 2s infinite'
-              }}>
-                🤖
-              </div>
-              <div style={{ flex: 1 }}>
-                <p style={{ margin: '0 0 8px 0', fontWeight: '600', fontSize: '14px' }}>
-                  FinBot - Assistente Inteligente
-                </p>
-                
-                {/* Dica Principal */}
-                <p style={{ margin: '0 0 8px 0', fontSize: '14px', lineHeight: '1.5', opacity: 0.95 }}>
-                  {finBotDica}
-                </p>
-                
-                {/* Alertas Inteligentes */}
-                {alertasInteligentes.length > 0 && (
-                  <div style={{
-                    backgroundColor: 'rgba(255,255,255,0.1)',
-                    borderRadius: '8px',
-                    padding: '8px',
-                    marginTop: '8px'
-                  }}>
-                    <div style={{ fontSize: '12px', fontWeight: '600', marginBottom: '4px', opacity: 0.9 }}>
-                      💡 Insights Adicionais:
-                    </div>
-                    {alertasInteligentes.slice(0, 2).map((alerta, i) => (
-                      <div key={i} style={{
-                        fontSize: '11px',
-                        opacity: 0.85,
-                        marginBottom: '2px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px'
-                      }}>
-                        <span>{alerta.icone}</span>
-                        <span>{alerta.sugestao || alerta.descricao}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                
-                {/* Botões de Ação */}
-                <div style={{
-                  display: 'flex',
-                  gap: '8px',
-                  marginTop: '8px'
-                }}>
-                  <button style={{
-                    backgroundColor: 'rgba(255,255,255,0.2)',
-                    border: 'none',
-                    borderRadius: '6px',
-                    padding: '4px 8px',
-                    color: 'white',
-                    fontSize: '11px',
-                    cursor: 'pointer'
-                  }}>
-                    💡 Mais Dicas
-                  </button>
-                  <button style={{
-                    backgroundColor: 'rgba(255,255,255,0.2)',
-                    border: 'none',
-                    borderRadius: '6px',
-                    padding: '4px 8px',
-                    color: 'white',
-                    fontSize: '11px',
-                    cursor: 'pointer'
-                  }}>
-                    🎯 Aplicar
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* FinBot Inteligente */}
+            <FinBotAssistente 
+            finBotDica={finBotDica}
+            alertasInteligentes={alertasInteligentes}
+            loading={loading}
+          />
         </header>
 
         {/* Content */}
         <div style={{ padding: '32px' }}>
+
           {/* Resumo Inteligente */}
-          <div style={{
-            backgroundColor: 'white',
-            borderRadius: '16px',
-            padding: '24px',
-            marginBottom: '24px',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-            border: '1px solid #e2e8f0'
-          }}>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-              gap: '24px',
-              alignItems: 'center'
-            }}>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '14px', fontWeight: '600', color: '#64748b', marginBottom: '4px' }}>
-                  🎯 SAÚDE FINANCEIRA
-                </div>
-                <div style={{
-                  fontSize: '32px',
-                  fontWeight: 'bold',
-                  color: getCorSaude(dadosFamilia.saudeFinanceira)
-                }}>
-                  {dadosFamilia.saudeFinanceira}% 🟢
-                </div>
-              </div>
-              
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '14px', fontWeight: '600', color: '#64748b', marginBottom: '4px' }}>
-                  💳 RENDA COMPROMETIDA
-                </div>
-                <div style={{
-                  fontSize: '32px',
-                  fontWeight: 'bold',
-                  color: '#f59e0b'
-                }}>
-                  {dadosFamilia.rendaComprometida}%
-                </div>
-              </div>
-              
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '14px', fontWeight: '600', color: '#64748b', marginBottom: '4px' }}>
-                  💰 RENDA LIVRE
-                </div>
-                <div style={{
-                  fontSize: '32px',
-                  fontWeight: 'bold',
-                  color: '#10b981'
-                }}>
-                  {dadosFamilia.rendaLivre}%
-                </div>
-              </div>
-              
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '14px', fontWeight: '600', color: '#64748b', marginBottom: '4px' }}>
-                  💰 ECONOMIZADO HOJE
-                </div>
-                <div style={{
-                  fontSize: '24px',
-                  fontWeight: 'bold',
-                  color: '#10b981'
-                }}>
-                  {formatCurrency(animatedValues.economia)}
-                </div>
-                <div style={{ fontSize: '12px', color: '#64748b' }}>
-                  🔥 Ativo: {dadosFamilia.diasAtivos} dias!
-                </div>
-              </div>
-            </div>
-          </div>
+            <ResumoInteligente 
+            dadosFamilia={dadosFamilia}
+            animatedValues={animatedValues}
+            loading={loading}
+          />
 
           {/* Grid Principal */}
           <div style={{
@@ -1108,194 +974,18 @@ else if (nivel >= 3) tituloNivel = "APRENDENDO"
             marginBottom: '24px'
           }}>
             {/* Cards Principais */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: '16px'
-            }}>
-              {/* Receita Mês */}
-              <div style={{
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                color: 'white',
-                padding: '24px',
-                borderRadius: '16px',
-                boxShadow: '0 8px 25px rgba(16, 185, 129, 0.3)'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                  <span style={{ fontSize: '32px' }}>💰</span>
-                  <div>
-                    <h3 style={{ fontSize: '14px', opacity: 0.9, margin: 0, fontWeight: '500' }}>
-                      RECEITA MÊS
-                    </h3>
-                    <p style={{ fontSize: '28px', fontWeight: 'bold', margin: '4px 0 0 0' }}>
-                      {formatCurrency(animatedValues.receita)}
-                    </p>
-                    <p style={{ fontSize: '12px', opacity: 0.9, margin: 0 }}>
-                      {cardsData.receita.status}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Despesas Mês */}
-              <div style={{
-                background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                color: 'white',
-                padding: '24px',
-                borderRadius: '16px',
-                boxShadow: '0 8px 25px rgba(59, 130, 246, 0.3)'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                  <span style={{ fontSize: '32px' }}>💸</span>
-                  <div>
-                    <h3 style={{ fontSize: '14px', opacity: 0.9, margin: 0, fontWeight: '500' }}>
-                      DESPESAS MÊS
-                    </h3>
-                    <p style={{ fontSize: '28px', fontWeight: 'bold', margin: '4px 0 0 0' }}>
-                      {formatCurrency(animatedValues.despesas)}
-                    </p>
-                    <p style={{ fontSize: '12px', opacity: 0.9, margin: 0 }}>
-                      📊 {cardsData.despesas.percentualOrcado}% do orçado
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Faturas Previstas */}
-              <div style={{
-                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                color: 'white',
-                padding: '24px',
-                borderRadius: '16px',
-                boxShadow: '0 8px 25px rgba(245, 158, 11, 0.3)'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                  <span style={{ fontSize: '32px' }}>💳</span>
-                  <div>
-                    <h3 style={{ fontSize: '14px', opacity: 0.9, margin: 0, fontWeight: '500' }}>
-                      FATURAS PREVISTAS
-                    </h3>
-                    <p style={{ fontSize: '28px', fontWeight: 'bold', margin: '4px 0 0 0' }}>
-                      {formatCurrency(animatedValues.faturas)}
-                    </p>
-                    <p style={{ fontSize: '12px', opacity: 0.9, margin: 0 }}>
-                      ⚠️ {cardsData.faturas.percentualRenda}% da renda
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-                            {/* Crystal Ball */}
-                            <div style={{
-                background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-                color: 'white',
-                padding: '24px',
-                borderRadius: '16px',
-                boxShadow: '0 8px 25px rgba(139, 92, 246, 0.3)'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                  <span style={{ fontSize: '32px' }}>🔮</span>
-                  <div style={{ width: '100%' }}>
-                    <h3 style={{ fontSize: '14px', opacity: 0.9, margin: 0, fontWeight: '500' }}>
-                      CRYSTAL BALL
-                    </h3>
-                    <p style={{ fontSize: '28px', fontWeight: 'bold', margin: '4px 0 0 0' }}>
-                      {formatCurrency(animatedValues.saldo)}
-                    </p>
-                    <p style={{ fontSize: '12px', opacity: 0.9, margin: 0 }}>
-                      {cardsData.saldo.situacao}
-                    </p>
-                    
-                    {/* ✅ PREVISÃO INTELIGENTE: */}
-                    {previsao12Meses.length > 0 && (
-                      <div style={{
-                        marginTop: '8px',
-                        padding: '8px',
-                        backgroundColor: 'rgba(255,255,255,0.15)',
-                        borderRadius: '6px',
-                        fontSize: '11px',
-                        lineHeight: '1.3'
-                      }}>
-                        {(() => {
-                          const proximoCritico = previsao12Meses.find(m => m.status === 'critico')
-                          const proximoAlto = previsao12Meses.find(m => m.status === 'alto')
-                          
-                          if (proximoCritico) {
-                            return `⚠️ ${proximoCritico.mesCompleto}: ${formatCurrency(proximoCritico.total)}`
-                          } else if (proximoAlto) {
-                            return `🟡 ${proximoAlto.mesCompleto}: ${formatCurrency(proximoAlto.total)}`
-                          } else {
-                            return `✅ Próximos 12 meses: Situação controlada`
-                          }
-                        })()}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
+              <CardsFinanceiros 
+              cardsData={cardsData}
+              animatedValues={animatedValues}
+              loading={loading}
+            />
 
             {/* Próximos 7 Dias */}
-            <div style={{
-              backgroundColor: 'white',
-              borderRadius: '16px',
-              padding: '24px',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              border: '1px solid #e2e8f0'
-            }}>
-              <h2 style={{
-                fontSize: '18px',
-                fontWeight: 'bold',
-                margin: '0 0 20px 0',
-                color: '#1a202c',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}>
-                📅 PRÓXIMOS 7 DIAS
-              </h2>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {proximosEventos.map((evento, index) => (
-                  <div key={index} style={{
-                    padding: '12px',
-                    backgroundColor: '#f8fafc',
-                    borderRadius: '8px',
-                    border: '1px solid #e2e8f0'
-                  }}>
-                    <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>
-                      {evento.data}
-                    </div>
-                    <div style={{ fontWeight: '600', color: '#1a202c', marginBottom: '2px' }}>
-                      {evento.descricao}: {formatCurrency(evento.valor)}
-                    </div>
-                    {evento.extra && (
-                      <div style={{ fontSize: '11px', color: '#64748b' }}>
-                        {evento.extra}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-              
-              <button 
-                onClick={() => setCalendarioOpen(true)}
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  backgroundColor: '#3b82f6',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  marginTop: '16px'
-                }}
-              >
-                📅 Ver Calendário Completo
-              </button>
-            </div>
+              <ProximosEventos 
+              proximosEventos={proximosEventos}
+              setCalendarioOpen={setCalendarioOpen}
+              loading={loading}
+            />
           </div>
 
           {/* Segunda linha */}
@@ -1305,181 +995,17 @@ else if (nivel >= 3) tituloNivel = "APRENDENDO"
             gap: '24px',
             marginBottom: '24px'
           }}>
-            {/* Gráfico Fluxo Futuro */}
-            <div style={{
-              backgroundColor: 'white',
-              borderRadius: '16px',
-              padding: '24px',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              border: '1px solid #e2e8f0'
-            }}>
-              <h2 style={{
-                fontSize: '18px',
-                fontWeight: 'bold',
-                margin: '0 0 20px 0',
-                color: '#1a202c'
-              }}>
-                📊 FLUXO DE CAIXA FUTURO
-              </h2>
-              
-              <div style={{ height: '200px', marginBottom: '16px' }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={fluxoCaixaData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="mes" />
-                  <YAxis />
-                  <Line 
-                    type="monotone" 
-                    dataKey="valor" 
-                    stroke="#3b82f6" 
-                    strokeWidth={3}
-                    dot={{ fill: '#3b82f6', strokeWidth: 2, r: 6 }}
-                  />
-                  {/* ADICIONAR ESTA LINHA: */}
-                  <ReferenceLine 
-                    x="Jul" 
-                    stroke="#ef4444" 
-                    strokeWidth={2}
-                    strokeDasharray="5 5"
-                    label={{ 
-                      value: "← Você está aqui", 
-                      position: "topRight",
-                      style: { fill: '#ef4444', fontWeight: 'bold', fontSize: '12px' }
-                    }} 
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-              </div>
-              
-              <div style={{
-                backgroundColor: '#fef3c7',
-                border: '1px solid #fcd34d',
-                borderRadius: '8px',
-                padding: '12px',
-                fontSize: '13px',
-                color: '#92400e'
-              }}>
-                🎯 <strong>Você está aqui (Jul)</strong> - Setembro será o mês mais apertado
-              </div>
-            </div>
+          {/* Gráfico Fluxo Futuro */}
+            <FluxoCaixa 
+            fluxoCaixaData={fluxoCaixaData}
+            loading={loading}
+          />
 
-            {/* Desafio da Semana */}
-            <div style={{
-              backgroundColor: 'white',
-              borderRadius: '16px',
-              padding: '24px',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              border: '1px solid #e2e8f0'
-            }}>
-              <h2 style={{
-                fontSize: '18px',
-                fontWeight: 'bold',
-                margin: '0 0 16px 0',
-                color: '#1a202c'
-              }}>
-                🎯 DESAFIO DA SEMANA
-              </h2>
-              
-              <div style={{
-                backgroundColor: '#f0f9ff',
-                border: '1px solid #7dd3fc',
-                borderRadius: '12px',
-                padding: '16px',
-                marginBottom: '16px'
-              }}>
-                <h3 style={{
-                  fontSize: '16px',
-                  fontWeight: 'bold',
-                  margin: '0 0 8px 0',
-                  color: '#0c4a6e'
-                }}>
-                  {desafioSemanal.titulo}
-                </h3>
-                <p style={{
-                  fontSize: '14px',
-                  color: '#0369a1',
-                  margin: '0 0 12px 0'
-                }}>
-                  {desafioSemanal.meta}
-                </p>
-                
-                {/* Barra de Progresso */}
-                <div style={{
-                  backgroundColor: '#e0e7ff',
-                  borderRadius: '8px',
-                  height: '8px',
-                  marginBottom: '12px',
-                  overflow: 'hidden'
-                }}>
-                  <div style={{
-                    backgroundColor: '#3b82f6',
-                    height: '100%',
-                    width: `${desafioSemanal.progresso}%`,
-                    transition: 'width 0.5s ease'
-                  }} />
-                </div>
-                
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: '12px'
-                }}>
-                  <span style={{ fontSize: '14px', fontWeight: '600', color: '#0c4a6e' }}>
-                    {desafioSemanal.progresso}% ({desafioSemanal.diasCompletos}/{desafioSemanal.totalDias} dias)
-                  </span>
-                </div>
-                
-                {/* Progresso Individual */}
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
-                  gap: '12px',
-                  marginBottom: '12px'
-                }}>
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>
-                      👨 Você
-                    </div>
-                    <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
-                      {desafioSemanal.progressoVoce.map((completo, i) => (
-                        <span key={i} style={{
-                          fontSize: '16px',
-                          opacity: completo ? 1 : 0.3
-                        }}>
-                          {completo ? '✅' : '❌'}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>
-                      👩 Esposa
-                    </div>
-                    <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
-                      {desafioSemanal.progressoEsposa.map((completo, i) => (
-                        <span key={i} style={{
-                          fontSize: '16px',
-                          opacity: completo ? 1 : 0.3
-                        }}>
-                          {completo ? '✅' : '❌'}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                
-                <div style={{
-                  fontSize: '12px',
-                  fontWeight: '600',
-                  color: '#059669',
-                  textAlign: 'center'
-                }}>
-                  {desafioSemanal.premio}
-                </div>
-              </div>
-            </div>
+          {/* Desafio da Semana */}
+            <DesafioSemanal 
+            desafioSemanal={desafioSemanal}
+            loading={loading}
+          />
           </div>
 
                     {/* ✅ NOVA SEÇÃO: PREVISÃO 12 MESES */}
@@ -1802,72 +1328,10 @@ else if (nivel >= 3) tituloNivel = "APRENDENDO"
           </div>
 
           {/* Ações Rápidas */}
-          <div style={{
-            backgroundColor: 'white',
-            borderRadius: '16px',
-            padding: '24px',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-            border: '1px solid #e2e8f0'
-          }}>
-            <h2 style={{
-              fontSize: '18px',
-              fontWeight: 'bold',
-              margin: '0 0 20px 0',
-              color: '#1a202c'
-            }}>
-              ⚡ AÇÕES RÁPIDAS
-            </h2>
-            
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-              gap: '12px'
-            }}>
-                   {[
-                { label: '💰 + Receita', cor: '#10b981', href: '/receitas' },
-                { label: '💸 + Despesa', cor: '#ef4444', href: '/despesas' },
-                { label: '🛒 + Compra', cor: '#3b82f6', href: '/despesas/gerenciar' },
-                { label: '💳 Pagar', cor: '#f59e0b', href: '/cartoes' },
-                { label: '🎯 + Meta', cor: '#8b5cf6', href: '/metas' },
-                { label: '📊 Relatório', cor: '#6b7280', href: '/relatorios' },
-                { label: '🎭 Modo Casal', cor: '#ec4899', action: 'modal' },
-                { label: '🔮 Previsão', cor: '#14b8a6', href: '/previsao' }
-              ].map((acao, index) => (
-                <button
-                  key={index}
-                  onClick={() => {
-                    if (acao.action === 'modal') {
-                      setModoCosal(!modoCosal)
-                    } else if (acao.href) {
-                      window.location.href = acao.href
-                    }
-                  }}
-                  style={{
-                    backgroundColor: acao.cor,
-                    color: 'white',
-                    padding: '16px',
-                    borderRadius: '12px',
-                    border: 'none',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    boxShadow: `0 4px 15px ${acao.cor}33`
-                  }}
-                  onMouseOver={(e) => {
-                    e.target.style.transform = 'translateY(-2px)'
-                    e.target.style.boxShadow = `0 8px 25px ${acao.cor}44`
-                  }}
-                  onMouseOut={(e) => {
-                    e.target.style.transform = 'translateY(0)'
-                    e.target.style.boxShadow = `0 4px 15px ${acao.cor}33`
-                  }}
-                >
-                  {acao.label}
-                </button>
-              ))}
-            </div>
-          </div>
+            <AcoesRapidas 
+            setModoCosal={setModoCosal}
+            modoCosal={modoCosal}
+          />
 
           {/* Modo Casal - Modal */}
           {modoCosal && (

@@ -92,7 +92,12 @@ export function FormularioDespesa({
     return (
       <>
         {/* Descrição e Valor */}
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '16px', marginBottom: '16px' }}>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: window.innerWidth < 768 ? '1fr' : '2fr 1fr', 
+          gap: '16px', 
+          marginBottom: '16px' 
+        }}>
           <div>
             <label style={{
               display: 'block',
@@ -155,7 +160,12 @@ export function FormularioDespesa({
         </div>
   
         {/* Categoria, Data, Responsável */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: window.innerWidth < 768 ? '1fr' : '1fr 1fr 1fr', 
+          gap: '16px', 
+          marginBottom: '16px' 
+        }}>
           <div>
             <label style={{
               display: 'block',
@@ -284,7 +294,12 @@ export function FormularioDespesa({
   
     if (tipoFormulario === 'parcelada') {
       return (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: window.innerWidth < 768 ? '1fr' : '1fr 1fr', 
+          gap: '16px', 
+          marginBottom: '20px' 
+        }}>
           <div>
             <label style={{
               display: 'block',
@@ -352,7 +367,12 @@ export function FormularioDespesa({
   
     if (tipoFormulario === 'fixa') {
       return (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: window.innerWidth < 768 ? '1fr' : '1fr 1fr 1fr', 
+          gap: '16px', 
+          marginBottom: '20px' 
+        }}>
           <div>
             <label style={{
               display: 'block',

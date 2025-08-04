@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts'
 
 export function ListaDespesas({
@@ -8,6 +9,29 @@ export function ListaDespesas({
   handleExport,
   gerarDadosEvolucao
 }) {
+  const [error, setError] = useState(null)
+
+  const handleError = (error, action) => {
+    console.error(`Erro ao ${action}:`, error)
+    setError(`Erro ao ${action}. Tente novamente.`)
+    setTimeout(() => setError(null), 5000)
+  }
+
+  if (error) {
+    return (
+      <div style={{
+        backgroundColor: '#fef2f2',
+        border: '1px solid #fecaca',
+        borderRadius: '8px',
+        padding: '16px',
+        color: '#dc2626',
+        textAlign: 'center'
+      }}>
+        ❌ {error}
+      </div>
+    )
+  }
+
   return (
     <div style={{
       backgroundColor: 'white',

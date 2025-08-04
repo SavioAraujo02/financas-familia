@@ -28,7 +28,7 @@ export function AnaliseDespesas({
 
       <div style={{
         display: 'grid',
-        gridTemplateColumns: '1fr 1fr 1fr',
+        gridTemplateColumns: window.innerWidth < 768 ? '1fr' : '1fr 1fr 1fr',
         gap: '24px'
       }}>
         {/* Evolução 6 Meses */}
@@ -49,6 +49,65 @@ export function AnaliseDespesas({
           progressoOrcamento={progressoOrcamento}
           formatCurrency={formatCurrency}
         />
+      </div>
+      {/* Insights Inteligentes */}
+      <div style={{
+        marginTop: '24px',
+        padding: '20px',
+        backgroundColor: '#f0f9ff',
+        borderRadius: '12px',
+        border: '1px solid #7dd3fc'
+      }}>
+        <h3 style={{
+          fontSize: '16px',
+          fontWeight: '600',
+          margin: '0 0 16px 0',
+          color: '#0c4a6e'
+        }}>
+          🧠 INSIGHTS INTELIGENTES
+        </h3>
+        
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: window.innerWidth < 768 ? '1fr' : '1fr 1fr',
+          gap: '16px'
+        }}>
+          <div>
+            <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#0369a1', margin: '0 0 8px 0' }}>
+              📊 COMPARAÇÃO COM MÊS ANTERIOR:
+            </h4>
+            <div style={{ fontSize: '14px', color: '#0369a1' }}>
+              {(() => {
+                const mesAnterior = gerarDadosEvolucao().slice(-2, -1)[0]?.valor || 0
+                const atual = totalMes
+                const diferenca = atual - mesAnterior
+                const percentual = mesAnterior > 0 ? ((diferenca / mesAnterior) * 100).toFixed(1) : 0
+                
+                if (diferenca > 0) {
+                  return `📈 Aumento de ${formatCurrency(diferenca)} (${percentual}%)`
+                } else if (diferenca < 0) {
+                  return `📉 Redução de ${formatCurrency(Math.abs(diferenca))} (${Math.abs(percentual)}%)`
+                } else {
+                  return `➡️ Manteve o mesmo valor`
+                }
+              })()}
+            </div>
+          </div>
+          
+          <div>
+            <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#0369a1', margin: '0 0 8px 0' }}>
+              🎯 RECOMENDAÇÃO:
+            </h4>
+            <div style={{ fontSize: '14px', color: '#0369a1' }}>
+              {progressoOrcamento > 100 
+                ? '🚨 Revisar gastos e cortar supérfluos'
+                : progressoOrcamento > 80 
+                ? '⚠️ Monitorar gastos até fim do mês'
+                : '✅ Controle excelente, continue assim!'
+              }
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )

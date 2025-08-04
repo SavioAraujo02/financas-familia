@@ -869,7 +869,7 @@ export default function DespesasRevolucionaria() {
       {/* CSS Animations */}
       <style jsx>{`
         @keyframes spin {
-                    0% { transform: rotate(0deg); }
+          0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
         }
       `}</style>
